@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Modular Arithmetic Circle</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: #0d0d0d;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0.5rem 1rem 0.6rem;
+      gap: 0.4rem;
+    }
+
+    h1 {
+      flex-shrink: 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      color: #fff;
+    }
+
+    #canvas-wrap {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+
+    canvas { display: block; border-radius: 50%; }
+
+    .controls {
+      flex-shrink: 0;
+      width: 100%;
+      max-width: 680px;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 0.6rem 0.9rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    /* columns: [lo] [hi] [label] [slider] [◀] [step] [▶] [value] [✓] */
+    .row {
+      display: grid;
+      grid-template-columns: 38px 38px 62px 1fr 20px 46px 20px 56px 16px;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .lbl {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #888;
+      white-space: nowrap;
+    }
+
+    /* ── shared number input base ── */
+    input[type="number"] {
+      background: #111;
+      border: 1px solid #2e2e2e;
+      border-radius: 5px;
+      color: #a78bfa;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-align: center;
+      padding: 3px 2px;
+      width: 100%;
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input[type="number"]:focus { outline: none; border-color: #a78bfa; }
+
+    /* bound inputs — subtle, with tooltip cursor */
+    .bound {
+      color: #555;
+      font-size: 0.72rem;
+      font-weight: 400;
+      border-color: #222;
+      cursor: help;
+    }
+    .bound:hover { border-color: #444; color: #888; }
+    .bound:focus { outline: none; border-color: #555; color: #aaa; }
+
+    /* step input */
+    .step {
+      color: #777;
+      font-size: 0.72rem;
+      font-weight: 400;
+      border-color: #222;
+    }
+    .step:focus { outline: none; border-color: #666; }
+
+    /* range slider */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 3px;
+      background: #333;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #a78bfa;
+      cursor: pointer;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #a78bfa;
+      cursor: pointer;
+      border: none;
+    }
+
+    /* arrow buttons */
+    .arrow {
+      background: none;
+      border: 1px solid #2e2e2e;
+      border-radius: 4px;
+      color: #a78bfa;
+      cursor: pointer;
+      font-size: 0.6rem;
+      line-height: 1;
+      padding: 3px 2px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .arrow:hover { background: #252525; border-color: #555; }
+    .arrow:active { background: #333; }
+
+    .bottom-row {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      padding-top: 0.05rem;
+    }
+
+    #playBtn {
+      flex-shrink: 0;
+      background: #a78bfa;
+      color: #000;
+      border: none;
+      border-radius: 7px;
+      padding: 0.3rem 0.9rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    #playBtn:hover { background: #c4b5fd; }
+
+    .hint { font-size: 0.68rem; color: #555; }
+
+    input[type="checkbox"].anim-check {
+      accent-color: #a78bfa;
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+      justify-self: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>Modular Arithmetic Circle</h1>
+
+  <div id="canvas-wrap">
+    <canvas id="c"></canvas>
+  </div>
+
+  <div class="controls">
+
+    <!-- Multiplier row -->
+    <div class="row">
+      <input class="bound" id="multLo"     type="number" value="1"   step="any" title="Lower bound of the Multiplier slider" />
+      <input class="bound" id="multHi"     type="number" value="100" step="any" title="Upper bound of the Multiplier slider" />
+      <span class="lbl">Mult</span>
+      <input id="multSlider" type="range" min="1" max="100" value="2" step="0.01" />
+      <button class="arrow" data-target="mult"   data-dir="-1">&#9664;</button>
+      <input class="step"  id="multStep"   type="number" value="0.1" step="any"  title="Increment / decrement step for arrows" />
+      <button class="arrow" data-target="mult"   data-dir="1">&#9654;</button>
+      <input id="multNum" type="number" value="2" step="0.01" />
+      <input type="checkbox" class="anim-check" id="multAnimate" checked title="Animate multiplier when playing" />
+    </div>
+
+    <!-- Points row -->
+    <div class="row">
+      <input class="bound" id="pointsLo"   type="number" value="0"   step="1"   title="Lower bound of the Points slider" />
+      <input class="bound" id="pointsHi"   type="number" value="200" step="1"   title="Upper bound of the Points slider" />
+      <span class="lbl">Points</span>
+      <input id="pointsSlider" type="range" min="0" max="200" value="50" step="1" />
+      <button class="arrow" data-target="points" data-dir="-1">&#9664;</button>
+      <input class="step"  id="pointsStep" type="number" value="1"   step="any"  title="Increment / decrement step for arrows" />
+      <button class="arrow" data-target="points" data-dir="1">&#9654;</button>
+      <input id="pointsNum" type="number" value="50" step="1" />
+      <input type="checkbox" class="anim-check" id="pointsAnimate" title="Animate points when playing" />
+    </div>
+
+    <!-- Speed row -->
+    <div class="row">
+      <input class="bound" id="speedLo"    type="number" value="-3"  step="any" title="Lower bound of the Speed slider" />
+      <input class="bound" id="speedHi"    type="number" value="3"   step="any" title="Upper bound of the Speed slider" />
+      <span class="lbl">Speed</span>
+      <input id="speedSlider" type="range" min="-3" max="3" value="1" step="0.1" />
+      <button class="arrow" data-target="speed"  data-dir="-1">&#9664;</button>
+      <input class="step"  id="speedStep"  type="number" value="0.1" step="any"  title="Increment / decrement step for arrows" />
+      <button class="arrow" data-target="speed"  data-dir="1">&#9654;</button>
+      <input id="speedNum" type="number" value="1" step="0.1" />
+      <span></span>
+    </div>
+
+    <div class="bottom-row">
+      <button id="playBtn">&#9654; Play</button>
+      <span class="hint">Point i &rarr; (i &times; mult) mod N &nbsp;&mdash;&nbsp; Play animates the multiplier between its bounds</span>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('c');
+    const ctx    = canvas.getContext('2d');
+
+    const el = id => document.getElementById(id);
+
+    // Slider elements
+    const multSlider   = el('multSlider');
+    const pointsSlider = el('pointsSlider');
+    const speedSlider  = el('speedSlider');
+    // Value number inputs
+    const multNum      = el('multNum');
+    const pointsNum    = el('pointsNum');
+    const speedNum     = el('speedNum');
+    // Bound inputs
+    const multLo       = el('multLo');
+    const multHi       = el('multHi');
+    const pointsLo     = el('pointsLo');
+    const pointsHi     = el('pointsHi');
+    const speedLo      = el('speedLo');
+    const speedHi      = el('speedHi');
+    // Step inputs
+    const multStep     = el('multStep');
+    const pointsStep   = el('pointsStep');
+    const speedStep    = el('speedStep');
+    const playBtn      = el('playBtn');
+
+    let mult = 2, points = 50, speed = 1;
+    let multAnim = 2, pointsAnim = 50; // float accumulators for smooth animation
+    let playing = false, lastTime = null, rafId = null;
+
+    function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+    function num(el) { const v = parseFloat(el.value); return isNaN(v) ? 0 : v; }
+
+    // ── sync helpers ──────────────────────────────────────────────
+
+    function syncMult(v, redraw = true) {
+      const lo = num(multLo), hi = num(multHi);
+      mult = clamp(parseFloat(v), lo, hi);
+      if (isNaN(mult)) mult = lo;
+      multAnim = mult;
+      multSlider.value = mult;
+      multNum.value    = parseFloat(mult.toFixed(3));
+      if (redraw) draw();
+    }
+
+    function syncPoints(v, redraw = true) {
+      const lo = num(pointsLo), hi = num(pointsHi);
+      points = clamp(Math.round(parseFloat(v)), lo, hi);
+      if (isNaN(points)) points = lo;
+      pointsAnim = points;
+      pointsSlider.value = points;
+      pointsNum.value    = points;
+      if (redraw) draw();
+    }
+
+    function syncSpeed(v) {
+      const lo = num(speedLo), hi = num(speedHi);
+      speed = clamp(parseFloat(v), lo, hi);
+      if (isNaN(speed)) speed = 1;
+      speedSlider.value = speed;
+      speedNum.value    = parseFloat(speed.toFixed(2));
+    }
+
+    // Apply new bounds to a slider and re-sync the current value
+    function applyBounds(slider, loInput, hiInput, syncFn) {
+      const lo = num(loInput), hi = num(hiInput);
+      slider.min = lo;
+      slider.max = hi;
+      syncFn(parseFloat(slider.value));
+    }
+
+    // ── slider / value input listeners ───────────────────────────
+
+    multSlider.addEventListener('input',   () => syncMult(multSlider.value));
+    multNum.addEventListener('change',     () => syncMult(multNum.value));
+    pointsSlider.addEventListener('input', () => syncPoints(pointsSlider.value));
+    pointsNum.addEventListener('change',   () => syncPoints(pointsNum.value));
+    speedSlider.addEventListener('input',  () => syncSpeed(speedSlider.value));
+    speedNum.addEventListener('change',    () => syncSpeed(speedNum.value));
+
+    // ── bound input listeners ─────────────────────────────────────
+
+    multLo.addEventListener('change',   () => applyBounds(multSlider,   multLo,   multHi,   syncMult));
+    multHi.addEventListener('change',   () => applyBounds(multSlider,   multLo,   multHi,   syncMult));
+    pointsLo.addEventListener('change', () => applyBounds(pointsSlider, pointsLo, pointsHi, syncPoints));
+    pointsHi.addEventListener('change', () => applyBounds(pointsSlider, pointsLo, pointsHi, syncPoints));
+    speedLo.addEventListener('change',  () => applyBounds(speedSlider,  speedLo,  speedHi,  syncSpeed));
+    speedHi.addEventListener('change',  () => applyBounds(speedSlider,  speedLo,  speedHi,  syncSpeed));
+
+    // ── arrow button listeners ────────────────────────────────────
+
+    document.querySelectorAll('.arrow').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const dir    = parseFloat(btn.dataset.dir);
+        const target = btn.dataset.target;
+        if (target === 'mult') {
+          const step = parseFloat(multStep.value) || 0.1;
+          syncMult(mult + dir * step);
+        } else if (target === 'points') {
+          const step = parseFloat(pointsStep.value) || 1;
+          syncPoints(points + dir * step);
+        } else if (target === 'speed') {
+          const step = parseFloat(speedStep.value) || 0.1;
+          syncSpeed(speed + dir * step);
+        }
+      });
+    });
+
+    // ── play / pause ──────────────────────────────────────────────
+
+    playBtn.addEventListener('click', () => {
+      playing = !playing;
+      playBtn.innerHTML = playing ? '&#9646;&#9646; Pause' : '&#9654; Play';
+      if (playing) { lastTime = null; rafId = requestAnimationFrame(animate); }
+      else          { cancelAnimationFrame(rafId); }
+    });
+
+    function wrapAnim(val, lo, hi) {
+      const range = hi - lo;
+      if (range <= 0) return lo;
+      while (val > hi) val = lo + (val - hi);
+      while (val < lo) val = hi - (lo - val);
+      return val;
+    }
+
+    function animate(ts) {
+      if (!lastTime) lastTime = ts;
+      const dt = (ts - lastTime) / 1000;
+      lastTime = ts;
+
+      if (el('multAnimate').checked) {
+        const lo = num(multLo), hi = num(multHi);
+        multAnim = wrapAnim(multAnim + speed * dt, lo, hi);
+        mult = multAnim;
+        multSlider.value = mult;
+        multNum.value    = parseFloat(mult.toFixed(3));
+      }
+
+      if (el('pointsAnimate').checked) {
+        const lo = num(pointsLo), hi = num(pointsHi);
+        pointsAnim = wrapAnim(pointsAnim + speed * dt, lo, hi);
+        points = Math.round(pointsAnim);
+        pointsSlider.value = points;
+        pointsNum.value    = points;
+      }
+
+      draw();
+      rafId = requestAnimationFrame(animate);
+    }
+
+    // ── canvas sizing ─────────────────────────────────────────────
+
+    function sizeCanvas() {
+      const wrap = document.getElementById('canvas-wrap');
+      const rect = wrap.getBoundingClientRect();
+      const px   = Math.floor(Math.min(rect.width, rect.height) * devicePixelRatio);
+      canvas.width  = px;
+      canvas.height = px;
+      const css = Math.floor(px / devicePixelRatio) + 'px';
+      canvas.style.width  = css;
+      canvas.style.height = css;
+    }
+
+    // ── draw ──────────────────────────────────────────────────────
+
+    function draw() {
+      const sz = canvas.width;
+      if (!sz) return;
+      const cx = sz / 2, cy = sz / 2, r = sz * 0.44;
+
+      ctx.clearRect(0, 0, sz, sz);
+
+      // Outer ring
+      ctx.strokeStyle = '#2a2a2a';
+      ctx.lineWidth   = 1.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      if (points < 2) return; // nothing to draw without at least 2 points
+
+      // Dots
+      const dotR = Math.max(1.2, 4 - points / 80);
+      for (let i = 0; i < points; i++) {
+        const a = (2 * Math.PI * i) / points - Math.PI / 2;
+        ctx.fillStyle = '#3a3a5a';
+        ctx.beginPath();
+        ctx.arc(cx + r * Math.cos(a), cy + r * Math.sin(a), dotR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Lines
+      ctx.lineWidth = Math.max(0.3, 1.2 - points / 300);
+      for (let i = 0; i < points; i++) {
+        const j  = (i * mult) % points;
+        const a1 = (2 * Math.PI * i) / points - Math.PI / 2;
+        const a2 = (2 * Math.PI * j) / points - Math.PI / 2;
+        ctx.strokeStyle = `hsla(${(i / points) * 360},80%,65%,0.55)`;
+        ctx.beginPath();
+        ctx.moveTo(cx + r * Math.cos(a1), cy + r * Math.sin(a1));
+        ctx.lineTo(cx + r * Math.cos(a2), cy + r * Math.sin(a2));
+        ctx.stroke();
+      }
+    }
+
+    window.addEventListener('resize', () => { sizeCanvas(); draw(); });
+    sizeCanvas();
+    draw();
+  </script>
+</body>
+</html>
