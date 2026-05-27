@@ -45,7 +45,7 @@
     .controls {
       flex-shrink: 0;
       width: 100%;
-      max-width: 680px;
+      max-width: 720px;
       background: #1a1a1a;
       border: 1px solid #2a2a2a;
       border-radius: 10px;
@@ -55,10 +55,10 @@
       gap: 0.4rem;
     }
 
-    /* columns: [lo] [hi] [label] [slider] [◀] [step] [▶] [value] [✓] */
+    /* columns: [dec] [inc] [row-play] [step] [label] [lo] [slider] [hi] [value] */
     .row {
       display: grid;
-      grid-template-columns: 38px 38px 62px 1fr 20px 46px 20px 56px 16px;
+      grid-template-columns: 20px 20px 26px 46px 58px 34px 1fr 34px 56px;
       align-items: center;
       gap: 0.3rem;
     }
@@ -69,6 +69,8 @@
       letter-spacing: 0.07em;
       color: #888;
       white-space: nowrap;
+      text-align: right;
+      padding-right: 2px;
     }
 
     /* ── shared number input base ── */
@@ -88,13 +90,14 @@
     input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
     input[type="number"]:focus { outline: none; border-color: #a78bfa; }
 
-    /* bound inputs — subtle, with tooltip cursor */
+    /* bound inputs flanking the slider — subtle, tooltip cursor */
     .bound {
       color: #555;
       font-size: 0.72rem;
       font-weight: 400;
       border-color: #222;
       cursor: help;
+      text-align: center;
     }
     .bound:hover { border-color: #444; color: #888; }
     .bound:focus { outline: none; border-color: #555; color: #aaa; }
@@ -136,10 +139,31 @@
       border: none;
     }
 
-    /* arrow buttons */
-    .arrow {
+    /* step buttons (dec / inc) */
+    .step-btn {
+      background: #1c1c1c;
+      border: 1px solid #383838;
+      border-radius: 3px;
+      color: #999;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 700;
+      line-height: 1;
+      padding: 3px 2px;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.1s, color 0.1s;
+    }
+    .step-btn:hover { background: #2a2a2a; border-color: #555; color: #ddd; }
+    .step-btn:active { background: #333; transform: translateY(1px); }
+
+    /* play toggle buttons */
+    .row-play {
       background: none;
-      border: 1px solid #2e2e2e;
+      border: 1px solid #a78bfa;
       border-radius: 4px;
       color: #a78bfa;
       cursor: pointer;
@@ -147,43 +171,15 @@
       line-height: 1;
       padding: 3px 2px;
       width: 100%;
+      height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-    .arrow:hover { background: #252525; border-color: #555; }
-    .arrow:active { background: #333; }
-
-    .bottom-row {
-      display: flex;
-      align-items: center;
-      gap: 0.8rem;
-      padding-top: 0.05rem;
-    }
-
-    #playBtn {
-      flex-shrink: 0;
-      background: #a78bfa;
-      color: #000;
-      border: none;
-      border-radius: 7px;
-      padding: 0.3rem 0.9rem;
-      font-size: 0.85rem;
-      font-weight: 700;
-      cursor: pointer;
       transition: background 0.15s;
     }
-    #playBtn:hover { background: #c4b5fd; }
-
-    .hint { font-size: 0.68rem; color: #555; }
-
-    input[type="checkbox"].anim-check {
-      accent-color: #a78bfa;
-      width: 14px;
-      height: 14px;
-      cursor: pointer;
-      justify-self: center;
-    }
+    .row-play:hover { background: #1e1530; }
+    .row-play:active { background: #2a1f4a; }
+    .row-play.active { background: #2a1f4a; border-color: #c4b5fd; color: #c4b5fd; }
   </style>
 </head>
 <body>
@@ -195,49 +191,32 @@
 
   <div class="controls">
 
-    <!-- Multiplier row -->
+    <!-- Multiplier row: [dec] [inc] [row-play] [step] [label] [lo] [slider] [hi] [value] -->
     <div class="row">
-      <input class="bound" id="multLo"     type="number" value="1"   step="any" title="Lower bound of the Multiplier slider" />
-      <input class="bound" id="multHi"     type="number" value="100" step="any" title="Upper bound of the Multiplier slider" />
+      <button class="step-btn" data-target="mult"   data-dir="-1" title="Decrement">&#8722;</button>
+      <button class="step-btn" data-target="mult"   data-dir="1"  title="Increment">&#43;</button>
+      <button class="row-play" id="multPlayBtn" title="Animate multiplier">&#9654;</button>
+      <input class="step" id="multStep" type="number" value="0.1" step="any" title="Step size for arrows and animation speed (units/sec)" />
       <span class="lbl">Mult</span>
+      <input class="bound" id="multLo" type="number" value="1"   step="any" title="Lower bound of the Multiplier slider" />
       <input id="multSlider" type="range" min="1" max="100" value="2" step="0.01" />
-      <button class="arrow" data-target="mult"   data-dir="-1">&#9664;</button>
-      <input class="step"  id="multStep"   type="number" value="0.1" step="any"  title="Increment / decrement step for arrows" />
-      <button class="arrow" data-target="mult"   data-dir="1">&#9654;</button>
+      <input class="bound" id="multHi" type="number" value="100" step="any" title="Upper bound of the Multiplier slider" />
       <input id="multNum" type="number" value="2" step="0.01" />
-      <input type="checkbox" class="anim-check" id="multAnimate" checked title="Animate multiplier when playing" />
     </div>
 
     <!-- Points row -->
     <div class="row">
-      <input class="bound" id="pointsLo"   type="number" value="0"   step="1"   title="Lower bound of the Points slider" />
-      <input class="bound" id="pointsHi"   type="number" value="200" step="1"   title="Upper bound of the Points slider" />
+      <button class="step-btn" data-target="points" data-dir="-1" title="Decrement">&#8722;</button>
+      <button class="step-btn" data-target="points" data-dir="1"  title="Increment">&#43;</button>
+      <button class="row-play" id="pointsPlayBtn" title="Animate points">&#9654;</button>
+      <input class="step" id="pointsStep" type="number" value="5" step="any" title="Step size for arrows and animation speed (units/sec)" />
       <span class="lbl">Points</span>
+      <input class="bound" id="pointsLo" type="number" value="0"   step="1" title="Lower bound of the Points slider" />
       <input id="pointsSlider" type="range" min="0" max="200" value="50" step="1" />
-      <button class="arrow" data-target="points" data-dir="-1">&#9664;</button>
-      <input class="step"  id="pointsStep" type="number" value="1"   step="any"  title="Increment / decrement step for arrows" />
-      <button class="arrow" data-target="points" data-dir="1">&#9654;</button>
+      <input class="bound" id="pointsHi" type="number" value="200" step="1" title="Upper bound of the Points slider" />
       <input id="pointsNum" type="number" value="50" step="1" />
-      <input type="checkbox" class="anim-check" id="pointsAnimate" title="Animate points when playing" />
     </div>
 
-    <!-- Speed row -->
-    <div class="row">
-      <input class="bound" id="speedLo"    type="number" value="-3"  step="any" title="Lower bound of the Speed slider" />
-      <input class="bound" id="speedHi"    type="number" value="3"   step="any" title="Upper bound of the Speed slider" />
-      <span class="lbl">Speed</span>
-      <input id="speedSlider" type="range" min="-3" max="3" value="1" step="0.1" />
-      <button class="arrow" data-target="speed"  data-dir="-1">&#9664;</button>
-      <input class="step"  id="speedStep"  type="number" value="0.1" step="any"  title="Increment / decrement step for arrows" />
-      <button class="arrow" data-target="speed"  data-dir="1">&#9654;</button>
-      <input id="speedNum" type="number" value="1" step="0.1" />
-      <span></span>
-    </div>
-
-    <div class="bottom-row">
-      <button id="playBtn">&#9654; Play</button>
-      <span class="hint">Point i &rarr; (i &times; mult) mod N &nbsp;&mdash;&nbsp; Play animates the multiplier between its bounds</span>
-    </div>
   </div>
 
   <script>
@@ -246,30 +225,23 @@
 
     const el = id => document.getElementById(id);
 
-    // Slider elements
-    const multSlider   = el('multSlider');
-    const pointsSlider = el('pointsSlider');
-    const speedSlider  = el('speedSlider');
-    // Value number inputs
-    const multNum      = el('multNum');
-    const pointsNum    = el('pointsNum');
-    const speedNum     = el('speedNum');
-    // Bound inputs
-    const multLo       = el('multLo');
-    const multHi       = el('multHi');
-    const pointsLo     = el('pointsLo');
-    const pointsHi     = el('pointsHi');
-    const speedLo      = el('speedLo');
-    const speedHi      = el('speedHi');
-    // Step inputs
-    const multStep     = el('multStep');
-    const pointsStep   = el('pointsStep');
-    const speedStep    = el('speedStep');
-    const playBtn      = el('playBtn');
+    const multSlider    = el('multSlider');
+    const pointsSlider  = el('pointsSlider');
+    const multNum       = el('multNum');
+    const pointsNum     = el('pointsNum');
+    const multLo        = el('multLo');
+    const multHi        = el('multHi');
+    const pointsLo      = el('pointsLo');
+    const pointsHi      = el('pointsHi');
+    const multStep      = el('multStep');
+    const pointsStep    = el('pointsStep');
+    const multPlayBtn   = el('multPlayBtn');
+    const pointsPlayBtn = el('pointsPlayBtn');
 
-    let mult = 2, points = 50, speed = 1;
-    let multAnim = 2, pointsAnim = 50; // float accumulators for smooth animation
-    let playing = false, lastTime = null, rafId = null;
+    let mult = 2, points = 50;
+    let multAnim = 2, pointsAnim = 50;
+    let multPlaying = false, pointsPlaying = false;
+    let lastTime = null, rafId = null;
 
     function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
     function num(el) { const v = parseFloat(el.value); return isNaN(v) ? 0 : v; }
@@ -278,8 +250,7 @@
 
     function syncMult(v, redraw = true) {
       const lo = num(multLo), hi = num(multHi);
-      mult = clamp(parseFloat(v), lo, hi);
-      if (isNaN(mult)) mult = lo;
+      mult = clamp(isNaN(parseFloat(v)) ? lo : parseFloat(v), lo, hi);
       multAnim = mult;
       multSlider.value = mult;
       multNum.value    = parseFloat(mult.toFixed(3));
@@ -288,27 +259,16 @@
 
     function syncPoints(v, redraw = true) {
       const lo = num(pointsLo), hi = num(pointsHi);
-      points = clamp(Math.round(parseFloat(v)), lo, hi);
-      if (isNaN(points)) points = lo;
+      points = clamp(isNaN(parseFloat(v)) ? lo : Math.round(parseFloat(v)), lo, hi);
       pointsAnim = points;
       pointsSlider.value = points;
       pointsNum.value    = points;
       if (redraw) draw();
     }
 
-    function syncSpeed(v) {
-      const lo = num(speedLo), hi = num(speedHi);
-      speed = clamp(parseFloat(v), lo, hi);
-      if (isNaN(speed)) speed = 1;
-      speedSlider.value = speed;
-      speedNum.value    = parseFloat(speed.toFixed(2));
-    }
-
-    // Apply new bounds to a slider and re-sync the current value
     function applyBounds(slider, loInput, hiInput, syncFn) {
-      const lo = num(loInput), hi = num(hiInput);
-      slider.min = lo;
-      slider.max = hi;
+      slider.min = num(loInput);
+      slider.max = num(hiInput);
       syncFn(parseFloat(slider.value));
     }
 
@@ -318,8 +278,6 @@
     multNum.addEventListener('change',     () => syncMult(multNum.value));
     pointsSlider.addEventListener('input', () => syncPoints(pointsSlider.value));
     pointsNum.addEventListener('change',   () => syncPoints(pointsNum.value));
-    speedSlider.addEventListener('input',  () => syncSpeed(speedSlider.value));
-    speedNum.addEventListener('change',    () => syncSpeed(speedNum.value));
 
     // ── bound input listeners ─────────────────────────────────────
 
@@ -327,36 +285,40 @@
     multHi.addEventListener('change',   () => applyBounds(multSlider,   multLo,   multHi,   syncMult));
     pointsLo.addEventListener('change', () => applyBounds(pointsSlider, pointsLo, pointsHi, syncPoints));
     pointsHi.addEventListener('change', () => applyBounds(pointsSlider, pointsLo, pointsHi, syncPoints));
-    speedLo.addEventListener('change',  () => applyBounds(speedSlider,  speedLo,  speedHi,  syncSpeed));
-    speedHi.addEventListener('change',  () => applyBounds(speedSlider,  speedLo,  speedHi,  syncSpeed));
 
     // ── arrow button listeners ────────────────────────────────────
 
-    document.querySelectorAll('.arrow').forEach(btn => {
+    document.querySelectorAll('.step-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        const dir    = parseFloat(btn.dataset.dir);
-        const target = btn.dataset.target;
-        if (target === 'mult') {
-          const step = parseFloat(multStep.value) || 0.1;
-          syncMult(mult + dir * step);
-        } else if (target === 'points') {
-          const step = parseFloat(pointsStep.value) || 1;
-          syncPoints(points + dir * step);
-        } else if (target === 'speed') {
-          const step = parseFloat(speedStep.value) || 0.1;
-          syncSpeed(speed + dir * step);
+        const dir = parseFloat(btn.dataset.dir);
+        if (btn.dataset.target === 'mult') {
+          syncMult(mult + dir * (parseFloat(multStep.value) || 0.1));
+        } else {
+          syncPoints(points + dir * (parseFloat(pointsStep.value) || 1));
         }
       });
     });
 
-    // ── play / pause ──────────────────────────────────────────────
+    // ── per-row play toggle ───────────────────────────────────────
 
-    playBtn.addEventListener('click', () => {
-      playing = !playing;
-      playBtn.innerHTML = playing ? '&#9646;&#9646; Pause' : '&#9654; Play';
-      if (playing) { lastTime = null; rafId = requestAnimationFrame(animate); }
-      else          { cancelAnimationFrame(rafId); }
-    });
+    function toggleRowPlay(btn, flagSetter) {
+      const active = btn.classList.toggle('active');
+      btn.innerHTML = active ? '&#9646;&#9646;' : '&#9654;';
+      flagSetter(active);
+      const anyPlaying = multPlaying || pointsPlaying;
+      if (anyPlaying && !rafId) {
+        lastTime = null;
+        rafId = requestAnimationFrame(animate);
+      } else if (!anyPlaying && rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    }
+
+    multPlayBtn.addEventListener('click',   () => toggleRowPlay(multPlayBtn,   v => { multPlaying = v; }));
+    pointsPlayBtn.addEventListener('click', () => toggleRowPlay(pointsPlayBtn, v => { pointsPlaying = v; }));
+
+    // ── animation loop ────────────────────────────────────────────
 
     function wrapAnim(val, lo, hi) {
       const range = hi - lo;
@@ -371,17 +333,19 @@
       const dt = (ts - lastTime) / 1000;
       lastTime = ts;
 
-      if (el('multAnimate').checked) {
+      if (multPlaying) {
         const lo = num(multLo), hi = num(multHi);
-        multAnim = wrapAnim(multAnim + speed * dt, lo, hi);
+        const spd = parseFloat(multStep.value) || 0.1;
+        multAnim = wrapAnim(multAnim + spd * dt, lo, hi);
         mult = multAnim;
         multSlider.value = mult;
         multNum.value    = parseFloat(mult.toFixed(3));
       }
 
-      if (el('pointsAnimate').checked) {
+      if (pointsPlaying) {
         const lo = num(pointsLo), hi = num(pointsHi);
-        pointsAnim = wrapAnim(pointsAnim + speed * dt, lo, hi);
+        const spd = parseFloat(pointsStep.value) || 5;
+        pointsAnim = wrapAnim(pointsAnim + spd * dt, lo, hi);
         points = Math.round(pointsAnim);
         pointsSlider.value = points;
         pointsNum.value    = points;
@@ -394,7 +358,7 @@
     // ── canvas sizing ─────────────────────────────────────────────
 
     function sizeCanvas() {
-      const wrap = document.getElementById('canvas-wrap');
+      const wrap = el('canvas-wrap');
       const rect = wrap.getBoundingClientRect();
       const px   = Math.floor(Math.min(rect.width, rect.height) * devicePixelRatio);
       canvas.width  = px;
@@ -413,16 +377,14 @@
 
       ctx.clearRect(0, 0, sz, sz);
 
-      // Outer ring
       ctx.strokeStyle = '#2a2a2a';
       ctx.lineWidth   = 1.5;
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.stroke();
 
-      if (points < 2) return; // nothing to draw without at least 2 points
+      if (points < 2) return;
 
-      // Dots
       const dotR = Math.max(1.2, 4 - points / 80);
       for (let i = 0; i < points; i++) {
         const a = (2 * Math.PI * i) / points - Math.PI / 2;
@@ -432,7 +394,6 @@
         ctx.fill();
       }
 
-      // Lines
       ctx.lineWidth = Math.max(0.3, 1.2 - points / 300);
       for (let i = 0; i < points; i++) {
         const j  = (i * mult) % points;
