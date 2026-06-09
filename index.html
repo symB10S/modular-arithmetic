@@ -67,6 +67,34 @@
     .topbar-btn:hover { background: #1e1530; }
     .topbar-btn:active { background: #2a1f4a; }
 
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 1;
+      flex-shrink: 0;
+    }
+    .topbar-text-btn {
+      display: none;
+      background: none;
+      border: 1px solid #a78bfa;
+      border-radius: 4px;
+      color: #a78bfa;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      padding: 0 0.65rem;
+      height: 36px;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .topbar-text-btn:hover { background: #1e1530; }
+    .topbar-text-btn:active { background: #2a1f4a; }
+    @media (min-width: 541px) {
+      .topbar-text-btn { display: flex; align-items: center; }
+    }
+
     #canvas-wrap {
       flex: 1;
       min-height: 0;
@@ -76,7 +104,7 @@
       width: 100%;
     }
 
-    canvas { display: block; border-radius: 50%; }
+    #c { display: block; border-radius: 50%; }
 
     .controls {
       flex-shrink: 0;
@@ -452,25 +480,187 @@
       accent-color: #a78bfa;
     }
     .sp-row.hidden { display: none; }
+
+    /* ── Analysis modal ─────────────────────────────────────────── */
+    #analysis-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    #analysis-overlay.open { display: flex; }
+
+    #analysis-modal {
+      background: #141414;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      width: min(640px, 100%);
+      max-height: calc(100vh - 2rem);
+      display: flex;
+      flex-direction: column;
+      overflow: visible;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    }
+    .am-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1rem;
+      height: 48px;
+      border-bottom: 1px solid #2a2a2a;
+      border-radius: 12px 12px 0 0;
+      background: #141414;
+      flex-shrink: 0;
+    }
+    .am-header span { font-size: 0.9rem; font-weight: 600; color: #e0e0e0; }
+    .am-close {
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 6px 8px;
+      border-radius: 4px;
+      line-height: 1;
+      transition: color 0.15s, background 0.15s;
+    }
+    .am-close:hover { color: #e0e0e0; background: #2a2a2a; }
+
+    .am-body {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      background: #141414;
+    }
+    .am-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem 1rem;
+    }
+    .am-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .am-field label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #777;
+    }
+    .am-field input[type="number"] {
+      width: 100%;
+      font-size: 0.85rem;
+      padding: 6px 8px;
+    }
+    .am-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-top: 0.25rem;
+    }
+    .am-run-btn {
+      background: #2a1f4a;
+      border: 1px solid #a78bfa;
+      border-radius: 6px;
+      color: #c4b5fd;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.45rem 1.1rem;
+      transition: background 0.15s;
+    }
+    .am-run-btn:hover { background: #3b2d6a; }
+    .am-run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .am-status {
+      font-size: 0.75rem;
+      color: #888;
+    }
+    .am-results {
+      display: none;
+      flex-direction: column;
+      gap: 0.75rem;
+      overflow: visible;
+    }
+    .am-results.visible { display: flex; }
+    .am-chart-wrap {
+      position: relative;
+      background: #0d0d0d;
+      border: 1px solid #2a2a2a;
+      padding: 0.5rem;
+      overflow: visible;
+      border-radius: 0;
+    }
+    #analysis-chart {
+      display: block;
+      width: 100%;
+      height: 340px;
+      cursor: crosshair;
+      border-radius: 0;
+    }
+    .am-chart-tip {
+      position: absolute;
+      display: none;
+      background: #1e1530;
+      border: 1px solid rgba(167,139,250,0.45);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 0.72rem;
+      color: #c4b5fd;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 2;
+      transform: translate(-50%, calc(-100% - 10px));
+    }
+    .am-chart-tip.visible { display: block; }
+    .am-chart-hint {
+      font-size: 0.68rem;
+      color: #555;
+      text-align: center;
+      margin-top: -0.35rem;
+    }
+    .am-dl-btn {
+      align-self: flex-start;
+      background: none;
+      border: 1px solid #555;
+      border-radius: 5px;
+      color: #aaa;
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 0.35rem 0.75rem;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .am-dl-btn:hover { border-color: #a78bfa; color: #c4b5fd; }
   </style>
 </head>
 <body>
   <div class="topbar">
     <button class="topbar-btn" id="settingsBtn" title="Settings">&#9881;</button>
     <h1>Modular Arithmetic</h1>
-    <button class="topbar-btn" id="downloadBtn" title="Download PNG">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <!-- image frame -->
-        <rect x="3" y="3" width="18" height="14" rx="2"/>
-        <!-- mountain/landscape -->
-        <polyline points="3,13 8,8 12,12 15,9 21,14"/>
-        <!-- sun dot -->
-        <circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/>
-        <!-- download arrow below -->
-        <line x1="12" y1="19" x2="12" y2="23"/>
-        <polyline points="9,21 12,24 15,21"/>
-      </svg>
-    </button>
+    <div class="topbar-right">
+      <button class="topbar-text-btn" id="analysisBtn" title="Sweep multipliers and plot path length">Run Analysis</button>
+      <button class="topbar-btn" id="downloadBtn" title="Download PNG">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <!-- image frame -->
+          <rect x="3" y="3" width="18" height="14" rx="2"/>
+          <!-- mountain/landscape -->
+          <polyline points="3,13 8,8 12,12 15,9 21,14"/>
+          <!-- sun dot -->
+          <circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/>
+          <!-- download arrow below -->
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <polyline points="9,21 12,24 15,21"/>
+        </svg>
+      </button>
+    </div>
   </div>
 
   <div id="canvas-wrap">
@@ -616,6 +806,48 @@
 
     </div>
   </aside>
+
+  <!-- Analysis modal -->
+  <div id="analysis-overlay" role="dialog" aria-labelledby="analysis-title" aria-modal="true">
+    <div id="analysis-modal">
+      <div class="am-header">
+        <span id="analysis-title">Run Analysis</span>
+        <button class="am-close" id="analysisClose" title="Close">&#10005;</button>
+      </div>
+      <div class="am-body">
+        <div class="am-fields">
+          <div class="am-field">
+            <label for="a-start">Start multiplier</label>
+            <input id="a-start" type="number" step="any" />
+          </div>
+          <div class="am-field">
+            <label for="a-end">End multiplier</label>
+            <input id="a-end" type="number" step="any" />
+          </div>
+          <div class="am-field">
+            <label for="a-step">Multiplier step size</label>
+            <input id="a-step" type="number" step="any" min="0.001" />
+          </div>
+          <div class="am-field">
+            <label for="a-points">Number of points</label>
+            <input id="a-points" type="number" step="1" min="2" />
+          </div>
+        </div>
+        <div class="am-actions">
+          <button class="am-run-btn" id="analysisRunBtn">Run</button>
+          <span class="am-status" id="analysisStatus"></span>
+        </div>
+        <div class="am-results" id="analysisResults">
+          <div class="am-chart-wrap" id="analysis-chart-wrap">
+            <canvas id="analysis-chart"></canvas>
+            <div id="analysis-chart-tip" class="am-chart-tip"></div>
+          </div>
+          <div class="am-chart-hint">Scroll to zoom · drag to pan · double-click to reset</div>
+          <button class="am-dl-btn" id="analysisDownloadBtn">Download data (CSV)</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
     const canvas = document.getElementById('c');
@@ -992,6 +1224,441 @@
       updateColorModeUI();
       draw();
     });
+
+    // ── Path length analysis ──────────────────────────────────────
+
+    function chordLength(i, j, n) {
+      const a1 = (2 * Math.PI * i) / n;
+      const a2 = (2 * Math.PI * j) / n;
+      let diff = Math.abs(a2 - a1);
+      if (diff > Math.PI) diff = 2 * Math.PI - diff;
+      return 2 * Math.sin(diff / 2);
+    }
+
+    function totalPathLength(multVal, n) {
+      if (n < 2) return 0;
+      let total = 0;
+      for (let i = 0; i < n; i++) {
+        const j = (i * multVal) % n;
+        total += chordLength(i, j, n);
+      }
+      return total;
+    }
+
+    function buildMultiplierRange(start, end, step) {
+      const decimals = Math.max(
+        (step.toString().split('.')[1] || '').length,
+        (start.toString().split('.')[1] || '').length,
+        (end.toString().split('.')[1] || '').length
+      );
+      const range = [];
+      const maxSteps = 10000;
+      for (let i = 0, m = start; m <= end + step * 0.0001 && i < maxSteps; i++, m += step) {
+        range.push(parseFloat(m.toFixed(decimals)));
+      }
+      return range;
+    }
+
+    let analysisData = [];
+    const chart = {
+      view: null,
+      full: null,
+      layout: null,
+      hover: -1,
+      panning: false,
+      panStart: null,
+    };
+
+    const analysisOverlay = el('analysis-overlay');
+    const analysisChart   = el('analysis-chart');
+    const analysisChartTip = el('analysis-chart-tip');
+
+    function chartFmt(v) {
+      if (Math.abs(v) >= 1000) return v.toFixed(0);
+      if (Math.abs(v) >= 10) return v.toFixed(1);
+      return v.toFixed(2);
+    }
+
+    function chartBounds(data) {
+      const xs = data.map(d => d.multiplier);
+      const ys = data.map(d => d.pathLength);
+      let xMin = Math.min(...xs), xMax = Math.max(...xs);
+      let yMin = Math.min(...ys), yMax = Math.max(...ys);
+      const xPad = (xMax - xMin || 1) * 0.05;
+      const yPad = (yMax - yMin || yMax * 0.02 || 1) * 0.12;
+      if (yMax === yMin) { yMin -= 1; yMax += 1; }
+      return { xMin: xMin - xPad, xMax: xMax + xPad, yMin: yMin - yPad, yMax: yMax + yPad };
+    }
+
+    function resetChartView() {
+      if (!analysisData.length) return;
+      const b = chartBounds(analysisData);
+      chart.view = { ...b };
+      chart.full = { ...b };
+    }
+
+    function clampChartView() {
+      if (!chart.full || !chart.view) return;
+      const minXSpan = (chart.full.xMax - chart.full.xMin) * 0.02;
+      const minYSpan = (chart.full.yMax - chart.full.yMin) * 0.02;
+      let xSpan = chart.view.xMax - chart.view.xMin;
+      let ySpan = chart.view.yMax - chart.view.yMin;
+      if (xSpan < minXSpan) {
+        const cx = (chart.view.xMin + chart.view.xMax) / 2;
+        chart.view.xMin = cx - minXSpan / 2;
+        chart.view.xMax = cx + minXSpan / 2;
+        xSpan = minXSpan;
+      }
+      if (ySpan < minYSpan) {
+        const cy = (chart.view.yMin + chart.view.yMax) / 2;
+        chart.view.yMin = cy - minYSpan / 2;
+        chart.view.yMax = cy + minYSpan / 2;
+        ySpan = minYSpan;
+      }
+      if (chart.view.xMin < chart.full.xMin) {
+        chart.view.xMax += chart.full.xMin - chart.view.xMin;
+        chart.view.xMin = chart.full.xMin;
+      }
+      if (chart.view.xMax > chart.full.xMax) {
+        chart.view.xMin -= chart.view.xMax - chart.full.xMax;
+        chart.view.xMax = chart.full.xMax;
+      }
+      if (chart.view.yMin < chart.full.yMin) {
+        chart.view.yMax += chart.full.yMin - chart.view.yMin;
+        chart.view.yMin = chart.full.yMin;
+      }
+      if (chart.view.yMax > chart.full.yMax) {
+        chart.view.yMin -= chart.view.yMax - chart.full.yMax;
+        chart.view.yMax = chart.full.yMax;
+      }
+    }
+
+    function fillAnalysisDefaults() {
+      el('a-start').value  = num(multLo);
+      el('a-end').value    = num(multHi);
+      el('a-step').value   = parseFloat(multStep.value) || 1;
+      el('a-points').value = points;
+    }
+
+    function openAnalysis() {
+      fillAnalysisDefaults();
+      el('analysisStatus').textContent = '';
+      el('analysisResults').classList.remove('visible');
+      chart.hover = -1;
+      analysisChartTip.classList.remove('visible');
+      analysisOverlay.classList.add('open');
+    }
+    function closeAnalysis() { analysisOverlay.classList.remove('open'); }
+
+    el('analysisBtn').addEventListener('click', openAnalysis);
+    el('analysisClose').addEventListener('click', closeAnalysis);
+    analysisOverlay.addEventListener('click', e => { if (e.target === analysisOverlay) closeAnalysis(); });
+
+    function drawAnalysisChart() {
+      const data = analysisData;
+      const wrap = el('analysis-chart-wrap');
+      const dpr  = devicePixelRatio || 1;
+      const cssH = 340;
+      const w    = Math.floor(wrap.clientWidth * dpr);
+      const h    = Math.floor(cssH * dpr);
+      analysisChart.width  = w;
+      analysisChart.height = h;
+
+      const g = analysisChart.getContext('2d');
+      g.fillStyle = '#0d0d0d';
+      g.fillRect(0, 0, w, h);
+
+      if (!data.length || !chart.view) return;
+
+      const { xMin, xMax, yMin, yMax } = chart.view;
+      const xSpan = xMax - xMin || 1;
+      const ySpan = yMax - yMin || 1;
+      const fontSize = 11 * dpr;
+
+      g.font = `${fontSize}px 'Segoe UI', system-ui, sans-serif`;
+      const yLabelW = Math.max(
+        g.measureText(chartFmt(yMin)).width,
+        g.measureText(chartFmt(yMax)).width
+      );
+      const xLabelW = Math.max(
+        g.measureText(chartFmt(xMin)).width,
+        g.measureText(chartFmt(xMax)).width
+      );
+      const dotR = 4 * dpr;
+
+      const pad = {
+        l: Math.ceil(yLabelW + 52 * dpr),
+        r: Math.ceil(xLabelW / 2 + 24 * dpr),
+        t: Math.ceil(fontSize + 20 * dpr),
+        b: Math.ceil(fontSize + 40 * dpr),
+      };
+      const plotX = pad.l;
+      const plotY = pad.t;
+      const plotW = w - pad.l - pad.r;
+      const plotH = h - pad.t - pad.b;
+
+      const toX = v => plotX + ((v - xMin) / xSpan) * plotW;
+      const toY = v => plotY + plotH - ((v - yMin) / ySpan) * plotH;
+
+      const screenPts = data.map((d, i) => ({
+        i, x: toX(d.multiplier), y: toY(d.pathLength),
+      }));
+      chart.layout = {
+        dpr, w, h, pad, plotX, plotY, plotW, plotH, screenPts, xMin, xMax, yMin, yMax,
+      };
+
+      g.strokeStyle = '#555';
+      g.lineWidth = dpr;
+      g.strokeRect(plotX + dpr / 2, plotY + dpr / 2, plotW - dpr, plotH - dpr);
+
+      g.save();
+      g.beginPath();
+      g.rect(plotX, plotY, plotW, plotH);
+      g.clip();
+
+      g.strokeStyle = '#a78bfa';
+      g.lineWidth = 1.5 * dpr;
+      g.lineJoin = 'round';
+      g.lineCap = 'round';
+      g.beginPath();
+      screenPts.forEach((p, i) => {
+        if (i === 0) g.moveTo(p.x, p.y);
+        else g.lineTo(p.x, p.y);
+      });
+      g.stroke();
+
+      screenPts.forEach(p => {
+        const active = p.i === chart.hover;
+        const r = active ? dotR + dpr : dotR;
+        g.fillStyle = active ? '#fff' : '#c4b5fd';
+        g.beginPath();
+        g.arc(p.x, p.y, r, 0, Math.PI * 2);
+        g.fill();
+        if (active) {
+          g.strokeStyle = '#a78bfa';
+          g.lineWidth = 1.5 * dpr;
+          g.stroke();
+        }
+      });
+      g.restore();
+
+      g.fillStyle = '#888';
+      g.textAlign = 'center';
+      g.textBaseline = 'alphabetic';
+      g.fillText('Multiplier', plotX + plotW / 2, h - 12 * dpr);
+
+      g.save();
+      g.translate(Math.max(28 * dpr, pad.l * 0.32), plotY + plotH / 2);
+      g.rotate(-Math.PI / 2);
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText('Total path length', 0, 0);
+      g.restore();
+
+      g.fillStyle = '#888';
+      g.textBaseline = 'middle';
+      g.textAlign = 'right';
+      g.fillText(chartFmt(yMax), plotX - 10 * dpr, plotY);
+      g.fillText(chartFmt(yMin), plotX - 10 * dpr, plotY + plotH);
+      g.textAlign = 'center';
+      g.fillText(chartFmt(xMin), plotX, plotY + plotH + 18 * dpr);
+      g.fillText(chartFmt(xMax), plotX + plotW, plotY + plotH + 18 * dpr);
+    }
+
+    function chartMousePos(e) {
+      const rect = analysisChart.getBoundingClientRect();
+      const dpr = chart.layout?.dpr || devicePixelRatio || 1;
+      return {
+        x: (e.clientX - rect.left) * dpr,
+        y: (e.clientY - rect.top) * dpr,
+        cssX: e.clientX - rect.left,
+        cssY: e.clientY - rect.top,
+      };
+    }
+
+    function findNearestPoint(mx, my) {
+      if (!chart.layout) return -1;
+      const hit = 14 * (chart.layout.dpr || 1);
+      let best = -1, bestDist = hit;
+      chart.layout.screenPts.forEach(p => {
+        const d = Math.hypot(p.x - mx, p.y - my);
+        if (d < bestDist) { bestDist = d; best = p.i; }
+      });
+      return best;
+    }
+
+    function updateChartHover(e) {
+      if (!analysisData.length || chart.panning) {
+        analysisChartTip.classList.remove('visible');
+        return;
+      }
+      const { x, y, cssX, cssY } = chartMousePos(e);
+      const idx = findNearestPoint(x, y);
+      if (idx !== chart.hover) {
+        chart.hover = idx;
+        drawAnalysisChart();
+      }
+      if (idx >= 0) {
+        const d = analysisData[idx];
+        analysisChartTip.textContent = `mult: ${d.multiplier}  ·  path: ${d.pathLength.toFixed(4)}`;
+        analysisChartTip.style.left = cssX + 'px';
+        analysisChartTip.style.top  = cssY + 'px';
+        analysisChartTip.classList.add('visible');
+      } else {
+        analysisChartTip.classList.remove('visible');
+      }
+    }
+
+    function zoomChartAt(cssX, cssY, factor) {
+      if (!chart.layout || !chart.view) return;
+      const { plotX, plotY, plotW, plotH, dpr } = chart.layout;
+      const mx = cssX * dpr;
+      const my = cssY * dpr;
+      if (mx < plotX || mx > plotX + plotW || my < plotY || my > plotY + plotH) return;
+
+      const relX = (mx - plotX) / plotW;
+      const relY = (my - plotY) / plotH;
+      const { xMin, xMax, yMin, yMax } = chart.view;
+      const xSpan = xMax - xMin;
+      const ySpan = yMax - yMin;
+      const anchorX = xMin + relX * xSpan;
+      const anchorY = yMax - relY * ySpan;
+      const newXSpan = xSpan * factor;
+      const newYSpan = ySpan * factor;
+
+      chart.view.xMin = anchorX - relX * newXSpan;
+      chart.view.xMax = anchorX + (1 - relX) * newXSpan;
+      chart.view.yMin = anchorY - (1 - relY) * newYSpan;
+      chart.view.yMax = anchorY + relY * newYSpan;
+      clampChartView();
+      drawAnalysisChart();
+      updateChartHover({ clientX: analysisChart.getBoundingClientRect().left + cssX,
+                         clientY: analysisChart.getBoundingClientRect().top + cssY });
+    }
+
+    analysisChart.addEventListener('wheel', e => {
+      if (!analysisData.length) return;
+      e.preventDefault();
+      const rect = analysisChart.getBoundingClientRect();
+      const factor = e.deltaY < 0 ? 0.85 : 1.18;
+      zoomChartAt(e.clientX - rect.left, e.clientY - rect.top, factor);
+    }, { passive: false });
+
+    analysisChart.addEventListener('mousedown', e => {
+      if (!chart.layout || e.button !== 0) return;
+      chart.panning = true;
+      chart.panStart = { ...chartMousePos(e), view: { ...chart.view } };
+      analysisChart.style.cursor = 'grabbing';
+      analysisChartTip.classList.remove('visible');
+    });
+
+    window.addEventListener('mousemove', e => {
+      if (chart.panning && chart.panStart && chart.layout) {
+        const pos = chartMousePos(e);
+        const dx = pos.x - chart.panStart.x;
+        const dy = pos.y - chart.panStart.y;
+        const { plotW, plotH } = chart.layout;
+        const v = chart.panStart.view;
+        const xShift = -(dx / plotW) * (v.xMax - v.xMin);
+        const yShift = (dy / plotH) * (v.yMax - v.yMin);
+        chart.view.xMin = v.xMin + xShift;
+        chart.view.xMax = v.xMax + xShift;
+        chart.view.yMin = v.yMin + yShift;
+        chart.view.yMax = v.yMax + yShift;
+        clampChartView();
+        drawAnalysisChart();
+        return;
+      }
+      if (analysisOverlay.classList.contains('open') && analysisData.length) {
+        updateChartHover(e);
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (!chart.panning) return;
+      chart.panning = false;
+      chart.panStart = null;
+      analysisChart.style.cursor = 'crosshair';
+    });
+
+    analysisChart.addEventListener('dblclick', () => {
+      resetChartView();
+      chart.hover = -1;
+      analysisChartTip.classList.remove('visible');
+      drawAnalysisChart();
+    });
+
+    analysisChart.addEventListener('mouseleave', () => {
+      if (chart.panning) return;
+      chart.hover = -1;
+      analysisChartTip.classList.remove('visible');
+      drawAnalysisChart();
+    });
+
+    function downloadAnalysisCsv() {
+      if (!analysisData.length) return;
+      const lines = ['multiplier,path_length', ...analysisData.map(d =>
+        `${d.multiplier},${d.pathLength.toFixed(6)}`
+      )];
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      const pts = analysisData[0] ? el('a-points').value : points;
+      a.download = `path_length_analysis_${pts}_points.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    el('analysisRunBtn').addEventListener('click', () => {
+      const start  = parseFloat(el('a-start').value);
+      const end    = parseFloat(el('a-end').value);
+      const step   = parseFloat(el('a-step').value);
+      const nPts   = Math.round(parseFloat(el('a-points').value));
+      const status = el('analysisStatus');
+      const runBtn = el('analysisRunBtn');
+
+      if (isNaN(start) || isNaN(end) || isNaN(step) || step <= 0) {
+        status.textContent = 'Invalid multiplier range or step.';
+        return;
+      }
+      if (end < start) {
+        status.textContent = 'End multiplier must be ≥ start.';
+        return;
+      }
+      if (isNaN(nPts) || nPts < 2) {
+        status.textContent = 'Points must be at least 2.';
+        return;
+      }
+
+      const multipliers = buildMultiplierRange(start, end, step);
+      if (!multipliers.length) {
+        status.textContent = 'No multipliers in range.';
+        return;
+      }
+      if (multipliers.length > 10000) {
+        status.textContent = 'Range too large (max 10,000 steps).';
+        return;
+      }
+
+      runBtn.disabled = true;
+      status.textContent = `Computing ${multipliers.length} values…`;
+
+      requestAnimationFrame(() => {
+        analysisData = multipliers.map(m => ({
+          multiplier: m,
+          pathLength: totalPathLength(m, nPts),
+        }));
+
+        resetChartView();
+        chart.hover = -1;
+        el('analysisResults').classList.add('visible');
+        requestAnimationFrame(() => drawAnalysisChart());
+        status.textContent = `${analysisData.length} values computed.`;
+        runBtn.disabled = false;
+      });
+    });
+
+    el('analysisDownloadBtn').addEventListener('click', downloadAnalysisCsv);
 
     // ── Download ──────────────────────────────────────────────────
 
