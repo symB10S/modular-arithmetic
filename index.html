@@ -493,6 +493,12 @@
       padding: 1rem;
     }
     #analysis-overlay.open { display: flex; }
+    #analysis-overlay.results-mode {
+      padding: 0;
+      background: #0d0d0d;
+      align-items: stretch;
+      justify-content: stretch;
+    }
 
     #analysis-modal {
       background: #141414;
@@ -502,9 +508,21 @@
       max-height: calc(100vh - 2rem);
       display: flex;
       flex-direction: column;
-      overflow: visible;
+      overflow: hidden;
       box-shadow: 0 12px 40px rgba(0,0,0,0.5);
     }
+    #analysis-modal.results-mode {
+      width: 100%;
+      max-height: none;
+      height: 100%;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    .am-page { display: none; flex-direction: column; flex: 1; min-height: 0; }
+    .am-page.active { display: flex; }
+
     .am-header {
       display: flex;
       align-items: center;
@@ -515,8 +533,30 @@
       border-radius: 12px 12px 0 0;
       background: #141414;
       flex-shrink: 0;
+      gap: 0.5rem;
     }
-    .am-header span { font-size: 0.9rem; font-weight: 600; color: #e0e0e0; }
+    #analysis-modal.results-mode .am-header {
+      border-radius: 0;
+    }
+    .am-header span { font-size: 0.9rem; font-weight: 600; color: #e0e0e0; flex: 1; }
+    .am-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+    .am-back-btn {
+      background: none;
+      border: 1px solid #555;
+      border-radius: 4px;
+      color: #aaa;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.3rem 0.65rem;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .am-back-btn:hover { border-color: #a78bfa; color: #c4b5fd; background: #1e1530; }
     .am-close {
       background: none;
       border: none;
@@ -584,27 +624,43 @@
       font-size: 0.75rem;
       color: #888;
     }
-    .am-results {
-      display: none;
-      flex-direction: column;
-      gap: 0.75rem;
-      overflow: visible;
+
+    .am-split {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: row;
     }
-    .am-results.visible { display: flex; }
+    .am-split-left {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #2a2a2a;
+      background: #0d0d0d;
+    }
+    .am-split-right {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #0d0d0d;
+      position: relative;
+    }
     .am-chart-wrap {
       position: relative;
+      flex: 1;
+      min-height: 0;
       background: #0d0d0d;
-      border: 1px solid #2a2a2a;
-      padding: 0.5rem;
       overflow: visible;
-      border-radius: 0;
     }
     #analysis-chart {
       display: block;
       width: 100%;
-      height: 340px;
+      height: 100%;
       cursor: crosshair;
-      border-radius: 0;
     }
     .am-chart-tip {
       position: absolute;
@@ -621,14 +677,21 @@
       transform: translate(-50%, calc(-100% - 10px));
     }
     .am-chart-tip.visible { display: block; }
+    .am-chart-footer {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.45rem 0.75rem;
+      border-top: 1px solid #2a2a2a;
+      background: #141414;
+    }
     .am-chart-hint {
       font-size: 0.68rem;
       color: #555;
-      text-align: center;
-      margin-top: -0.35rem;
     }
     .am-dl-btn {
-      align-self: flex-start;
       background: none;
       border: 1px solid #555;
       border-radius: 5px;
@@ -637,8 +700,92 @@
       font-size: 0.75rem;
       padding: 0.35rem 0.75rem;
       transition: border-color 0.15s, color 0.15s;
+      flex-shrink: 0;
     }
     .am-dl-btn:hover { border-color: #a78bfa; color: #c4b5fd; }
+    .am-circle-nav {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .am-nav-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 44px;
+      height: 44px;
+      background: #1a1a1a;
+      border: 1px solid #a78bfa;
+      border-radius: 8px;
+      color: #c4b5fd;
+      cursor: pointer;
+      font-size: 1.25rem;
+      font-weight: 700;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
+    }
+    .am-nav-btn:hover:not(:disabled) { background: #2a1f4a; border-color: #c4b5fd; color: #fff; }
+    .am-nav-btn:active:not(:disabled) { background: #3b2d6a; }
+    .am-nav-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      border-color: #444;
+      color: #666;
+    }
+    #analysisPrevBtn { left: 0.75rem; }
+    #analysisNextBtn { right: 0.75rem; }
+    #analysis-circle-wrap {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #analysis-circle {
+      display: block;
+      border-radius: 50%;
+    }
+    .am-circle-info {
+      flex-shrink: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 0.78rem;
+      color: #888;
+      padding: 0.5rem 0.75rem 0.65rem;
+      border-top: 1px solid #2a2a2a;
+      background: #141414;
+      min-height: 2rem;
+      line-height: 1.45;
+    }
+    .am-circle-info.active { color: #c4b5fd; }
+    .am-circle-info .pin-badge {
+      display: inline-block;
+      background: #2a1f4a;
+      border: 1px solid #a78bfa;
+      border-radius: 4px;
+      color: #e9d5ff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 1px 6px;
+      margin-right: 0.35rem;
+      vertical-align: middle;
+    }
+
+    @media (max-width: 700px) {
+      .am-split { flex-direction: column; }
+      .am-split-left { border-right: none; border-bottom: 1px solid #2a2a2a; flex: 1.1; }
+      .am-split-right { flex: 0.9; }
+    }
   </style>
 </head>
 <body>
@@ -810,40 +957,70 @@
   <!-- Analysis modal -->
   <div id="analysis-overlay" role="dialog" aria-labelledby="analysis-title" aria-modal="true">
     <div id="analysis-modal">
-      <div class="am-header">
-        <span id="analysis-title">Run Analysis</span>
-        <button class="am-close" id="analysisClose" title="Close">&#10005;</button>
+      <!-- Page 1: parameters -->
+      <div class="am-page active" id="analysis-setup-page">
+        <div class="am-header">
+          <span id="analysis-title">Run Analysis</span>
+          <div class="am-header-actions">
+            <button class="am-close" id="analysisClose" title="Close">&#10005;</button>
+          </div>
+        </div>
+        <div class="am-body">
+          <div class="am-fields">
+            <div class="am-field">
+              <label for="a-start">Start multiplier</label>
+              <input id="a-start" type="number" step="any" />
+            </div>
+            <div class="am-field">
+              <label for="a-end">End multiplier</label>
+              <input id="a-end" type="number" step="any" />
+            </div>
+            <div class="am-field">
+              <label for="a-step">Multiplier step size</label>
+              <input id="a-step" type="number" step="any" min="0.001" />
+            </div>
+            <div class="am-field">
+              <label for="a-points">Number of points</label>
+              <input id="a-points" type="number" step="1" min="2" />
+            </div>
+          </div>
+          <div class="am-actions">
+            <button class="am-run-btn" id="analysisRunBtn">Run</button>
+            <span class="am-status" id="analysisStatus"></span>
+          </div>
+        </div>
       </div>
-      <div class="am-body">
-        <div class="am-fields">
-          <div class="am-field">
-            <label for="a-start">Start multiplier</label>
-            <input id="a-start" type="number" step="any" />
-          </div>
-          <div class="am-field">
-            <label for="a-end">End multiplier</label>
-            <input id="a-end" type="number" step="any" />
-          </div>
-          <div class="am-field">
-            <label for="a-step">Multiplier step size</label>
-            <input id="a-step" type="number" step="any" min="0.001" />
-          </div>
-          <div class="am-field">
-            <label for="a-points">Number of points</label>
-            <input id="a-points" type="number" step="1" min="2" />
+
+      <!-- Page 2: results -->
+      <div class="am-page" id="analysis-results-page">
+        <div class="am-header">
+          <button class="am-back-btn" id="analysisBackBtn" title="Back to parameters">&#8592; Back</button>
+          <span>Analysis Results</span>
+          <div class="am-header-actions">
+            <button class="am-dl-btn" id="analysisDownloadBtn">Download CSV</button>
+            <button class="am-close" id="analysisResultsClose" title="Close">&#10005;</button>
           </div>
         </div>
-        <div class="am-actions">
-          <button class="am-run-btn" id="analysisRunBtn">Run</button>
-          <span class="am-status" id="analysisStatus"></span>
-        </div>
-        <div class="am-results" id="analysisResults">
-          <div class="am-chart-wrap" id="analysis-chart-wrap">
-            <canvas id="analysis-chart"></canvas>
-            <div id="analysis-chart-tip" class="am-chart-tip"></div>
+        <div class="am-split">
+          <div class="am-split-left">
+            <div class="am-chart-wrap" id="analysis-chart-wrap">
+              <canvas id="analysis-chart"></canvas>
+              <div id="analysis-chart-tip" class="am-chart-tip"></div>
+            </div>
+            <div class="am-chart-footer">
+              <span class="am-chart-hint">Drag to zoom · Shift+drag to pan · scroll to zoom · double-click to reset · click to pin · ← → to step</span>
+            </div>
           </div>
-          <div class="am-chart-hint">Drag to zoom · Shift+drag to pan · scroll to zoom · double-click to reset</div>
-          <button class="am-dl-btn" id="analysisDownloadBtn">Download data (CSV)</button>
+          <div class="am-split-right">
+            <div class="am-circle-nav">
+              <button class="am-nav-btn" id="analysisPrevBtn" title="Previous point (←)" disabled>&#8592;</button>
+              <div id="analysis-circle-wrap">
+                <canvas id="analysis-circle"></canvas>
+              </div>
+              <button class="am-nav-btn" id="analysisNextBtn" title="Next point (→)" disabled>&#8594;</button>
+            </div>
+            <div class="am-circle-info" id="analysis-circle-info">Hover or click a point on the chart</div>
+          </div>
         </div>
       </div>
     </div>
@@ -1043,58 +1220,68 @@
 
     // ── draw ──────────────────────────────────────────────────────
 
-    function draw() {
-      const sz = canvas.width;
+    function drawCircle(targetCtx, targetCanvas, multVal, nPts) {
+      const sz = targetCanvas.width;
       if (!sz) return;
       const cx = sz / 2, cy = sz / 2, r = sz * 0.44;
 
-      ctx.fillStyle = style.bgColor;
-      ctx.fillRect(0, 0, sz, sz);
+      targetCtx.fillStyle = style.bgColor;
+      targetCtx.fillRect(0, 0, sz, sz);
 
       if (style.showRing) {
-        ctx.strokeStyle = style.ringColor;
-        ctx.lineWidth   = style.ringWidth;
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.stroke();
+        targetCtx.strokeStyle = style.ringColor;
+        targetCtx.lineWidth   = style.ringWidth;
+        targetCtx.beginPath();
+        targetCtx.arc(cx, cy, r, 0, Math.PI * 2);
+        targetCtx.stroke();
       }
 
-      if (points < 2) return;
+      if (nPts < 2) return;
 
-      const dotR = Math.max(1.2, 4 - points / 80) * style.dotScale;
+      const dotR = Math.max(1.2, 4 - nPts / 80) * style.dotScale;
       if (style.showDots) {
-        for (let i = 0; i < points; i++) {
-          const a = (2 * Math.PI * i) / points - Math.PI / 2;
-          ctx.fillStyle = style.dotColor;
-          ctx.beginPath();
-          ctx.arc(cx + r * Math.cos(a), cy + r * Math.sin(a), dotR, 0, Math.PI * 2);
-          ctx.fill();
+        for (let i = 0; i < nPts; i++) {
+          const a = (2 * Math.PI * i) / nPts - Math.PI / 2;
+          targetCtx.fillStyle = style.dotColor;
+          targetCtx.beginPath();
+          targetCtx.arc(cx + r * Math.cos(a), cy + r * Math.sin(a), dotR, 0, Math.PI * 2);
+          targetCtx.fill();
         }
       }
 
-      ctx.lineWidth = Math.max(0.3, style.lineWidthMax - points / 300);
-      for (let i = 0; i < points; i++) {
-        const j  = (i * mult) % points;
-        const a1 = (2 * Math.PI * i) / points - Math.PI / 2;
-        const a2 = (2 * Math.PI * j) / points - Math.PI / 2;
+      targetCtx.lineWidth = Math.max(0.3, style.lineWidthMax - nPts / 300);
+      for (let i = 0; i < nPts; i++) {
+        const j  = (i * multVal) % nPts;
+        const a1 = (2 * Math.PI * i) / nPts - Math.PI / 2;
+        const a2 = (2 * Math.PI * j) / nPts - Math.PI / 2;
         let sc;
         if (style.colorMode === 'solid') {
           sc = hexToRgba(style.solidColor, style.lineOpacity);
         } else if (style.colorMode === 'hue-range') {
-          const hue = style.hueStart + (i / points) * (style.hueEnd - style.hueStart);
+          const hue = style.hueStart + (i / nPts) * (style.hueEnd - style.hueStart);
           sc = `hsla(${hue},${style.saturation}%,${style.lightness}%,${style.lineOpacity})`;
         } else {
-          sc = `hsla(${(i / points) * 360},${style.saturation}%,${style.lightness}%,${style.lineOpacity})`;
+          sc = `hsla(${(i / nPts) * 360},${style.saturation}%,${style.lightness}%,${style.lineOpacity})`;
         }
-        ctx.strokeStyle = sc;
-        ctx.beginPath();
-        ctx.moveTo(cx + r * Math.cos(a1), cy + r * Math.sin(a1));
-        ctx.lineTo(cx + r * Math.cos(a2), cy + r * Math.sin(a2));
-        ctx.stroke();
+        targetCtx.strokeStyle = sc;
+        targetCtx.beginPath();
+        targetCtx.moveTo(cx + r * Math.cos(a1), cy + r * Math.sin(a1));
+        targetCtx.lineTo(cx + r * Math.cos(a2), cy + r * Math.sin(a2));
+        targetCtx.stroke();
       }
     }
 
-    window.addEventListener('resize', () => { sizeCanvas(); draw(); });
+    function draw() { drawCircle(ctx, canvas, mult, points); }
+
+    window.addEventListener('resize', () => {
+      sizeCanvas();
+      draw();
+      if (typeof analysisResultsVisible === 'function' && analysisResultsVisible()) {
+        sizeAnalysisCircle();
+        drawAnalysisChart();
+        updateAnalysisCircle();
+      }
+    });
 
     // ── keep slider step in sync with step input ──────────────────
     function applyStep(slider, stepInput) {
@@ -1173,13 +1360,18 @@
       document.querySelectorAll('.solid-row').forEach(r => r.classList.toggle('hidden', mode !== 'solid'));
     }
 
+    function redrawAll() {
+      draw();
+      if (analysisResultsVisible()) updateAnalysisCircle();
+    }
+
     function bindRange(id, valId, prop, suffix, decimals) {
       const inp = el(id), valEl = el(valId);
       inp.addEventListener('input', () => {
         const v = parseFloat(inp.value);
         style[prop] = v;
         valEl.value = v.toFixed(decimals);
-        draw();
+        redrawAll();
       });
       valEl.addEventListener('change', () => {
         const raw = parseFloat(valEl.value);
@@ -1188,21 +1380,21 @@
         style[prop] = v;
         inp.value = v;
         valEl.value = v.toFixed(decimals);
-        draw();
+        redrawAll();
       });
     }
     function bindColor(id, prop) {
-      el(id).addEventListener('input', () => { style[prop] = el(id).value; draw(); });
+      el(id).addEventListener('input', () => { style[prop] = el(id).value; redrawAll(); });
     }
     function bindCheck(id, prop) {
-      el(id).addEventListener('change', () => { style[prop] = el(id).checked; draw(); });
+      el(id).addEventListener('change', () => { style[prop] = el(id).checked; redrawAll(); });
     }
 
     // Background: also keep body bg in sync so corners under border-radius match
     el('s-bg-color').addEventListener('input', () => {
       style.bgColor = el('s-bg-color').value;
       document.body.style.background = style.bgColor;
-      draw();
+      redrawAll();
     });
 
     bindCheck('s-show-ring',    'showRing');
@@ -1222,7 +1414,7 @@
     el('s-color-mode').addEventListener('change', () => {
       style.colorMode = el('s-color-mode').value;
       updateColorModeUI();
-      draw();
+      redrawAll();
     });
 
     // ── Path length analysis ──────────────────────────────────────
@@ -1260,11 +1452,13 @@
     }
 
     let analysisData = [];
+    let analysisNPoints = 200;
     const chart = {
       view: null,
       full: null,
       layout: null,
       hover: -1,
+      selected: -1,
       panning: false,
       panStart: null,
       selecting: false,
@@ -1272,9 +1466,161 @@
       selectCurrent: null,
     };
 
-    const analysisOverlay = el('analysis-overlay');
-    const analysisChart   = el('analysis-chart');
-    const analysisChartTip = el('analysis-chart-tip');
+    const analysisOverlay    = el('analysis-overlay');
+    const analysisModal      = el('analysis-modal');
+    const analysisSetupPage  = el('analysis-setup-page');
+    const analysisResultsPage = el('analysis-results-page');
+    const analysisChart      = el('analysis-chart');
+    const analysisChartTip   = el('analysis-chart-tip');
+    const analysisCircle     = el('analysis-circle');
+    const analysisCircleCtx  = analysisCircle.getContext('2d');
+    const analysisCircleInfo = el('analysis-circle-info');
+    const analysisPrevBtn    = el('analysisPrevBtn');
+    const analysisNextBtn    = el('analysisNextBtn');
+
+    function analysisResultsVisible() {
+      return analysisOverlay.classList.contains('open') &&
+             analysisResultsPage.classList.contains('active');
+    }
+
+    function showAnalysisSetup() {
+      analysisOverlay.classList.remove('results-mode');
+      analysisModal.classList.remove('results-mode');
+      analysisSetupPage.classList.add('active');
+      analysisResultsPage.classList.remove('active');
+    }
+
+    function showAnalysisResults() {
+      analysisOverlay.classList.add('results-mode');
+      analysisModal.classList.add('results-mode');
+      analysisSetupPage.classList.remove('active');
+      analysisResultsPage.classList.add('active');
+      sizeAnalysisCircle();
+      requestAnimationFrame(() => {
+        drawAnalysisChart();
+        updateAnalysisCircle();
+      });
+    }
+
+    function sizeAnalysisCircle() {
+      const rect = el('analysis-circle-wrap').parentElement.getBoundingClientRect();
+      const px   = Math.floor(Math.min(rect.width, rect.height) * devicePixelRatio);
+      analysisCircle.width  = px;
+      analysisCircle.height = px;
+      const css = Math.floor(px / devicePixelRatio) + 'px';
+      analysisCircle.style.width  = css;
+      analysisCircle.style.height = css;
+    }
+
+    function activeAnalysisIndex() {
+      if (chart.hover >= 0) return chart.hover;
+      if (chart.selected >= 0) return chart.selected;
+      return -1;
+    }
+
+    function updatePinNavButtons() {
+      const n = analysisData.length;
+      if (!n) {
+        analysisPrevBtn.disabled = true;
+        analysisNextBtn.disabled = true;
+        return;
+      }
+      const idx = chart.selected;
+      if (idx < 0) {
+        analysisPrevBtn.disabled = false;
+        analysisNextBtn.disabled = false;
+        return;
+      }
+      analysisPrevBtn.disabled = idx <= 0;
+      analysisNextBtn.disabled = idx >= n - 1;
+    }
+
+    function setPinnedIndex(idx) {
+      if (!analysisData.length || idx < 0 || idx >= analysisData.length) return;
+      chart.selected = idx;
+      chart.hover = -1;
+      analysisChartTip.classList.remove('visible');
+      drawAnalysisChart();
+      updateAnalysisCircle();
+      updatePinNavButtons();
+    }
+
+    function stepPinnedPoint(delta) {
+      if (!analysisData.length) return;
+      let idx = chart.selected;
+      if (idx < 0) {
+        idx = delta > 0 ? 0 : analysisData.length - 1;
+      } else {
+        idx = Math.max(0, Math.min(analysisData.length - 1, idx + delta));
+      }
+      setPinnedIndex(idx);
+    }
+
+    function updateAnalysisCircle() {
+      if (!analysisResultsVisible()) return;
+      const idx = activeAnalysisIndex();
+      const info = analysisCircleInfo;
+
+      if (idx < 0 || !analysisData[idx]) {
+        drawCircle(analysisCircleCtx, analysisCircle, 0, 0);
+        info.textContent = 'Hover or click a point on the chart';
+        info.classList.remove('active');
+        updatePinNavButtons();
+        return;
+      }
+
+      const d = analysisData[idx];
+      drawCircle(analysisCircleCtx, analysisCircle, d.multiplier, analysisNPoints);
+      const pinned = chart.hover < 0 && chart.selected === idx;
+      const posLabel = `${idx + 1} / ${analysisData.length}`;
+      const pinBadge = pinned ? '<span class="pin-badge">Pinned</span>' : '';
+      info.innerHTML = `${pinBadge}${posLabel} · mult: ${d.multiplier} · path: ${d.pathLength.toFixed(4)}`;
+      info.classList.add('active');
+      updatePinNavButtons();
+    }
+
+    function drawPinnedMarker(g, x, y, dpr, dotR, isAlsoHovered) {
+      const outerR = dotR + 7 * dpr;
+      const ringR  = dotR + 4 * dpr;
+      const fillR  = isAlsoHovered ? dotR + 2 * dpr : dotR + 1.5 * dpr;
+
+      g.save();
+      g.strokeStyle = 'rgba(167, 139, 250, 0.25)';
+      g.lineWidth = 6 * dpr;
+      g.beginPath();
+      g.arc(x, y, outerR, 0, Math.PI * 2);
+      g.stroke();
+
+      g.fillStyle = 'rgba(167, 139, 250, 0.12)';
+      g.beginPath();
+      g.arc(x, y, outerR, 0, Math.PI * 2);
+      g.fill();
+
+      g.strokeStyle = '#a78bfa';
+      g.lineWidth = 2 * dpr;
+      g.setLineDash([4 * dpr, 3 * dpr]);
+      g.beginPath();
+      g.arc(x, y, ringR, 0, Math.PI * 2);
+      g.stroke();
+      g.setLineDash([]);
+
+      g.strokeStyle = 'rgba(196, 181, 253, 0.5)';
+      g.lineWidth = dpr;
+      g.beginPath();
+      g.moveTo(x, y - outerR - 4 * dpr);
+      g.lineTo(x, y + outerR + 4 * dpr);
+      g.stroke();
+
+      g.fillStyle = isAlsoHovered ? '#fff' : '#e9d5ff';
+      g.beginPath();
+      g.arc(x, y, fillR, 0, Math.PI * 2);
+      g.fill();
+
+      g.strokeStyle = '#fff';
+      g.lineWidth = 2 * dpr;
+      g.stroke();
+      g.restore();
+    }
 
     function chartFmt(v) {
       if (Math.abs(v) >= 1000) return v.toFixed(0);
@@ -1346,24 +1692,31 @@
     function openAnalysis() {
       fillAnalysisDefaults();
       el('analysisStatus').textContent = '';
-      el('analysisResults').classList.remove('visible');
+      showAnalysisSetup();
       chart.hover = -1;
+      chart.selected = -1;
       analysisChartTip.classList.remove('visible');
       analysisOverlay.classList.add('open');
     }
-    function closeAnalysis() { analysisOverlay.classList.remove('open'); }
+    function closeAnalysis() {
+      analysisOverlay.classList.remove('open');
+      showAnalysisSetup();
+    }
 
     el('analysisBtn').addEventListener('click', openAnalysis);
     el('analysisClose').addEventListener('click', closeAnalysis);
-    analysisOverlay.addEventListener('click', e => { if (e.target === analysisOverlay) closeAnalysis(); });
+    el('analysisResultsClose').addEventListener('click', closeAnalysis);
+    el('analysisBackBtn').addEventListener('click', showAnalysisSetup);
+    analysisOverlay.addEventListener('click', e => {
+      if (e.target === analysisOverlay && !analysisResultsVisible()) closeAnalysis();
+    });
 
     function drawAnalysisChart() {
       const data = analysisData;
       const wrap = el('analysis-chart-wrap');
       const dpr  = devicePixelRatio || 1;
-      const cssH = 340;
       const w    = Math.floor(wrap.clientWidth * dpr);
-      const h    = Math.floor(cssH * dpr);
+      const h    = Math.floor(wrap.clientHeight * dpr);
       analysisChart.width  = w;
       analysisChart.height = h;
 
@@ -1430,19 +1783,35 @@
       });
       g.stroke();
 
+      const pinnedIdx = chart.selected;
+      const hoverIdx  = chart.hover;
+
       screenPts.forEach(p => {
-        const active = p.i === chart.hover;
-        const r = active ? dotR + dpr : dotR;
-        g.fillStyle = active ? '#fff' : '#c4b5fd';
+        if (p.i === pinnedIdx || p.i === hoverIdx) return;
+        g.fillStyle = '#c4b5fd';
         g.beginPath();
-        g.arc(p.x, p.y, r, 0, Math.PI * 2);
+        g.arc(p.x, p.y, dotR, 0, Math.PI * 2);
         g.fill();
-        if (active) {
+      });
+
+      if (pinnedIdx >= 0) {
+        const p = screenPts.find(pt => pt.i === pinnedIdx);
+        if (p) drawPinnedMarker(g, p.x, p.y, dpr, dotR, hoverIdx === pinnedIdx);
+      }
+
+      if (hoverIdx >= 0 && hoverIdx !== pinnedIdx) {
+        const p = screenPts.find(pt => pt.i === hoverIdx);
+        if (p) {
+          const r = dotR + dpr;
+          g.fillStyle = '#fff';
+          g.beginPath();
+          g.arc(p.x, p.y, r, 0, Math.PI * 2);
+          g.fill();
           g.strokeStyle = '#a78bfa';
           g.lineWidth = 1.5 * dpr;
           g.stroke();
         }
-      });
+      }
       g.restore();
 
       g.fillStyle = '#888';
@@ -1552,6 +1921,7 @@
       if (idx !== chart.hover) {
         chart.hover = idx;
         drawAnalysisChart();
+        updateAnalysisCircle();
       }
       if (idx >= 0) {
         const d = analysisData[idx];
@@ -1640,7 +2010,7 @@
         drawAnalysisChart();
         return;
       }
-      if (analysisOverlay.classList.contains('open') && analysisData.length) {
+      if (analysisResultsVisible() && analysisData.length) {
         updateChartHover(e);
       }
     });
@@ -1648,15 +2018,22 @@
     window.addEventListener('mouseup', () => {
       if (chart.selecting) {
         if (chart.selectStart && chart.selectCurrent) {
-          applyBoxZoom(
-            chart.selectStart.x, chart.selectStart.y,
-            chart.selectCurrent.x, chart.selectCurrent.y
-          );
+          const dx = Math.abs(chart.selectCurrent.x - chart.selectStart.x);
+          const dy = Math.abs(chart.selectCurrent.y - chart.selectStart.y);
+          const minSize = 5 * (chart.layout?.dpr || 1);
+          if (dx < minSize && dy < minSize) {
+            const idx = findNearestPoint(chart.selectStart.x, chart.selectStart.y);
+            if (idx >= 0) setPinnedIndex(idx);
+          } else {
+            applyBoxZoom(
+              chart.selectStart.x, chart.selectStart.y,
+              chart.selectCurrent.x, chart.selectCurrent.y
+            );
+          }
         }
         chart.selecting = false;
         chart.selectStart = null;
         chart.selectCurrent = null;
-        chart.hover = -1;
         analysisChart.style.cursor = 'crosshair';
         drawAnalysisChart();
         return;
@@ -1679,6 +2056,7 @@
       chart.hover = -1;
       analysisChartTip.classList.remove('visible');
       drawAnalysisChart();
+      updateAnalysisCircle();
     });
 
     function downloadAnalysisCsv() {
@@ -1734,17 +2112,34 @@
           multiplier: m,
           pathLength: totalPathLength(m, nPts),
         }));
+        analysisNPoints = nPts;
 
         resetChartView();
         chart.hover = -1;
-        el('analysisResults').classList.add('visible');
-        requestAnimationFrame(() => drawAnalysisChart());
+        chart.selected = -1;
+        showAnalysisResults();
+        updatePinNavButtons();
         status.textContent = `${analysisData.length} values computed.`;
         runBtn.disabled = false;
       });
     });
 
     el('analysisDownloadBtn').addEventListener('click', downloadAnalysisCsv);
+
+    analysisPrevBtn.addEventListener('click', () => stepPinnedPoint(-1));
+    analysisNextBtn.addEventListener('click', () => stepPinnedPoint(1));
+
+    window.addEventListener('keydown', e => {
+      if (!analysisResultsVisible() || !analysisData.length) return;
+      if (e.target.closest('input, textarea, select')) return;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        stepPinnedPoint(-1);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        stepPinnedPoint(1);
+      }
+    });
 
     // ── Download ──────────────────────────────────────────────────
 
