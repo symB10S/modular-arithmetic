@@ -842,7 +842,7 @@
             <canvas id="analysis-chart"></canvas>
             <div id="analysis-chart-tip" class="am-chart-tip"></div>
           </div>
-          <div class="am-chart-hint">Scroll to zoom · drag to pan · double-click to reset</div>
+          <div class="am-chart-hint">Drag to zoom · Shift+drag to pan · scroll to zoom · double-click to reset</div>
           <button class="am-dl-btn" id="analysisDownloadBtn">Download data (CSV)</button>
         </div>
       </div>
@@ -1267,6 +1267,9 @@
       hover: -1,
       panning: false,
       panStart: null,
+      selecting: false,
+      selectStart: null,
+      selectCurrent: null,
     };
 
     const analysisOverlay = el('analysis-overlay');
@@ -1463,6 +1466,29 @@
       g.textAlign = 'center';
       g.fillText(chartFmt(xMin), plotX, plotY + plotH + 18 * dpr);
       g.fillText(chartFmt(xMax), plotX + plotW, plotY + plotH + 18 * dpr);
+
+      if (chart.selecting && chart.selectStart && chart.selectCurrent) {
+        const sx0 = chart.selectStart.x;
+        const sy0 = chart.selectStart.y;
+        const sx1 = chart.selectCurrent.x;
+        const sy1 = chart.selectCurrent.y;
+        const left = Math.max(plotX, Math.min(sx0, sx1));
+        const right = Math.min(plotX + plotW, Math.max(sx0, sx1));
+        const top = Math.max(plotY, Math.min(sy0, sy1));
+        const bottom = Math.min(plotY + plotH, Math.max(sy0, sy1));
+        const selW = right - left;
+        const selH = bottom - top;
+        if (selW > 0 && selH > 0) {
+          g.save();
+          g.fillStyle = 'rgba(167, 139, 250, 0.15)';
+          g.strokeStyle = 'rgba(167, 139, 250, 0.85)';
+          g.lineWidth = dpr;
+          g.setLineDash([5 * dpr, 4 * dpr]);
+          g.fillRect(left, top, selW, selH);
+          g.strokeRect(left + dpr / 2, top + dpr / 2, selW - dpr, selH - dpr);
+          g.restore();
+        }
+      }
     }
 
     function chartMousePos(e) {
@@ -1487,8 +1513,37 @@
       return best;
     }
 
+    function isInPlot(mx, my) {
+      if (!chart.layout) return false;
+      const { plotX, plotY, plotW, plotH } = chart.layout;
+      return mx >= plotX && mx <= plotX + plotW && my >= plotY && my <= plotY + plotH;
+    }
+
+    function applyBoxZoom(sx0, sy0, sx1, sy1) {
+      if (!chart.layout || !chart.view) return;
+      const { plotX, plotY, plotW, plotH, dpr } = chart.layout;
+      const minSize = 5 * dpr;
+      if (Math.abs(sx1 - sx0) < minSize || Math.abs(sy1 - sy0) < minSize) return;
+
+      const left = Math.max(plotX, Math.min(sx0, sx1));
+      const right = Math.min(plotX + plotW, Math.max(sx0, sx1));
+      const top = Math.max(plotY, Math.min(sy0, sy1));
+      const bottom = Math.min(plotY + plotH, Math.max(sy0, sy1));
+      if (right - left < minSize || bottom - top < minSize) return;
+
+      const { xMin, xMax, yMin, yMax } = chart.view;
+      const xSpan = xMax - xMin;
+      const ySpan = yMax - yMin;
+
+      chart.view.xMin = xMin + ((left - plotX) / plotW) * xSpan;
+      chart.view.xMax = xMin + ((right - plotX) / plotW) * xSpan;
+      chart.view.yMax = yMax - ((top - plotY) / plotH) * ySpan;
+      chart.view.yMin = yMax - ((bottom - plotY) / plotH) * ySpan;
+      clampChartView();
+    }
+
     function updateChartHover(e) {
-      if (!analysisData.length || chart.panning) {
+      if (!analysisData.length || chart.panning || chart.selecting) {
         analysisChartTip.classList.remove('visible');
         return;
       }
@@ -1546,13 +1601,29 @@
 
     analysisChart.addEventListener('mousedown', e => {
       if (!chart.layout || e.button !== 0) return;
-      chart.panning = true;
-      chart.panStart = { ...chartMousePos(e), view: { ...chart.view } };
-      analysisChart.style.cursor = 'grabbing';
+      const pos = chartMousePos(e);
+      if (!isInPlot(pos.x, pos.y)) return;
       analysisChartTip.classList.remove('visible');
+      if (e.shiftKey) {
+        chart.panning = true;
+        chart.panStart = { ...pos, view: { ...chart.view } };
+        analysisChart.style.cursor = 'grabbing';
+      } else {
+        chart.selecting = true;
+        chart.selectStart = { x: pos.x, y: pos.y };
+        chart.selectCurrent = { x: pos.x, y: pos.y };
+        analysisChart.style.cursor = 'crosshair';
+        drawAnalysisChart();
+      }
     });
 
     window.addEventListener('mousemove', e => {
+      if (chart.selecting && chart.selectStart) {
+        const pos = chartMousePos(e);
+        chart.selectCurrent = { x: pos.x, y: pos.y };
+        drawAnalysisChart();
+        return;
+      }
       if (chart.panning && chart.panStart && chart.layout) {
         const pos = chartMousePos(e);
         const dx = pos.x - chart.panStart.x;
@@ -1575,6 +1646,21 @@
     });
 
     window.addEventListener('mouseup', () => {
+      if (chart.selecting) {
+        if (chart.selectStart && chart.selectCurrent) {
+          applyBoxZoom(
+            chart.selectStart.x, chart.selectStart.y,
+            chart.selectCurrent.x, chart.selectCurrent.y
+          );
+        }
+        chart.selecting = false;
+        chart.selectStart = null;
+        chart.selectCurrent = null;
+        chart.hover = -1;
+        analysisChart.style.cursor = 'crosshair';
+        drawAnalysisChart();
+        return;
+      }
       if (!chart.panning) return;
       chart.panning = false;
       chart.panStart = null;
@@ -1589,7 +1675,7 @@
     });
 
     analysisChart.addEventListener('mouseleave', () => {
-      if (chart.panning) return;
+      if (chart.panning || chart.selecting) return;
       chart.hover = -1;
       analysisChartTip.classList.remove('visible');
       drawAnalysisChart();
