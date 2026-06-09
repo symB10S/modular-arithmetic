@@ -1067,12 +1067,11 @@
     function syncPoints(v, redraw = true) {
       const lo = num(pointsLo);
       const requested = isNaN(parseFloat(v)) ? lo : Math.round(parseFloat(v));
-      if (requested > num(pointsHi)) {
-        pointsHi.value   = requested;
-        pointsSlider.max = requested;
+      points = Math.max(lo, requested);
+      if (points > num(pointsHi)) {
+        pointsHi.value   = points;
+        pointsSlider.max = points;
       }
-      const hi = num(pointsHi);
-      points = clamp(requested, lo, hi);
       pointsAnim = points;
       pointsSlider.value = points;
       pointsNum.value    = points;
@@ -1444,8 +1443,7 @@
         (end.toString().split('.')[1] || '').length
       );
       const range = [];
-      const maxSteps = 10000;
-      for (let i = 0, m = start; m <= end + step * 0.0001 && i < maxSteps; i++, m += step) {
+      for (let m = start; m <= end + step * 0.0001; m += step) {
         range.push(parseFloat(m.toFixed(decimals)));
       }
       return range;
@@ -2097,10 +2095,6 @@
       const multipliers = buildMultiplierRange(start, end, step);
       if (!multipliers.length) {
         status.textContent = 'No multipliers in range.';
-        return;
-      }
-      if (multipliers.length > 10000) {
-        status.textContent = 'Range too large (max 10,000 steps).';
         return;
       }
 
