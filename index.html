@@ -67,6 +67,13 @@
     .topbar-btn:hover { background: #1e1530; }
     .topbar-btn:active { background: #2a1f4a; }
 
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 1;
+      flex-shrink: 0;
+    }
     .topbar-right {
       display: flex;
       align-items: center;
@@ -490,6 +497,200 @@
     }
     .sp-row.hidden { display: none; }
 
+    /* ── Presets panel ───────────────────────────────────────────── */
+    #presets-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 200;
+    }
+    #presets-overlay.open { display: block; }
+    @media (min-width: 541px) {
+      #presets-overlay.open { background: transparent; pointer-events: none; }
+    }
+
+    #presets-panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 320px;
+      background: #141414;
+      border-right: 1px solid #2a2a2a;
+      z-index: 201;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform 0.25s cubic-bezier(.4,0,.2,1);
+      overflow: hidden;
+    }
+    #presets-panel.open { transform: translateX(0); }
+    @media (max-width: 540px) {
+      #presets-panel { width: 100%; border-right: none; }
+    }
+
+    .presets-save-row {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 0.25rem;
+    }
+    .presets-save-row input[type="text"] {
+      flex: 1;
+      min-width: 0;
+      background: #111;
+      border: 1px solid #2e2e2e;
+      border-radius: 5px;
+      color: #e0e0e0;
+      font-size: 0.82rem;
+      padding: 6px 8px;
+    }
+    .presets-save-row input[type="text"]:focus { outline: none; border-color: #a78bfa; }
+    .presets-action-btn {
+      background: none;
+      border: 1px solid #a78bfa;
+      border-radius: 5px;
+      color: #a78bfa;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0 0.65rem;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .presets-action-btn:hover { background: #1e1530; }
+    .presets-action-btn.danger { border-color: #7f4444; color: #e88; }
+    .presets-action-btn.danger:hover { background: #2a1515; }
+
+    .presets-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .presets-empty {
+      font-size: 0.78rem;
+      color: #666;
+      text-align: center;
+      padding: 1rem 0.5rem;
+      line-height: 1.5;
+    }
+
+    .preset-item {
+      background: #1c1c1c;
+      border: 1px solid #383838;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .preset-item-header {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.45rem 0.55rem;
+    }
+    .preset-name {
+      flex: 1;
+      min-width: 0;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 4px 6px;
+    }
+    .preset-name:hover { border-color: #333; }
+    .preset-name:focus { outline: none; border-color: #a78bfa; background: #111; }
+    .preset-header-btns {
+      display: flex;
+      gap: 0.25rem;
+      flex-shrink: 0;
+    }
+    .preset-mini-btn {
+      background: none;
+      border: 1px solid #444;
+      border-radius: 4px;
+      color: #aaa;
+      cursor: pointer;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 3px 6px;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .preset-mini-btn:hover { background: #2a2a2a; color: #e0e0e0; border-color: #666; }
+    .preset-mini-btn.load { border-color: #a78bfa; color: #a78bfa; }
+    .preset-mini-btn.load:hover { background: #1e1530; }
+
+    .preset-details {
+      display: none;
+      border-top: 1px solid #2a2a2a;
+      padding: 0.55rem 0.65rem 0.65rem;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .preset-details.open { display: flex; }
+
+    .preset-field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.35rem 0.5rem;
+    }
+    .preset-field label {
+      display: block;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #666;
+      margin-bottom: 2px;
+    }
+    .preset-field input[type="number"],
+    .preset-field input[type="text"] {
+      width: 100%;
+      background: #111;
+      border: 1px solid #2e2e2e;
+      border-radius: 4px;
+      color: #a78bfa;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-align: center;
+      padding: 4px 2px;
+    }
+    .preset-field input:focus { outline: none; border-color: #a78bfa; }
+
+    .preset-style-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #666;
+    }
+    .preset-style-json {
+      width: 100%;
+      min-height: 120px;
+      max-height: 200px;
+      resize: vertical;
+      background: #0d0d0d;
+      border: 1px solid #2e2e2e;
+      border-radius: 5px;
+      color: #bbb;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.68rem;
+      line-height: 1.4;
+      padding: 6px 8px;
+    }
+    .preset-style-json:focus { outline: none; border-color: #a78bfa; }
+    .preset-style-json.invalid { border-color: #a44; color: #e88; }
+
+    .preset-detail-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+    .preset-summary {
+      font-size: 0.7rem;
+      color: #777;
+      padding: 0 0.55rem 0.45rem;
+      line-height: 1.35;
+    }
+
     /* ── Analysis modal ─────────────────────────────────────────── */
     #analysis-overlay {
       display: none;
@@ -799,7 +1000,16 @@
 </head>
 <body>
   <div class="topbar">
-    <button class="topbar-btn" id="settingsBtn" title="Settings">&#9881;</button>
+    <div class="topbar-left">
+      <button class="topbar-btn" id="settingsBtn" title="Settings">&#9881;</button>
+      <button class="topbar-btn" id="presetsBtn" title="Saved configurations">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
+      </button>
+    </div>
     <h1>Modular Arithmetic</h1>
     <div class="topbar-right">
       <button class="topbar-text-btn" id="analysisBtn" title="Sweep multipliers and plot path length">Run Analysis</button>
@@ -1044,6 +1254,22 @@
         </div>
       </div>
 
+    </div>
+  </aside>
+
+  <!-- Presets panel -->
+  <div id="presets-overlay"></div>
+  <aside id="presets-panel" aria-label="Saved configurations">
+    <div class="sp-header">
+      <span>Saved Configurations</span>
+      <button class="sp-close" id="presetsClose" title="Close">&#10005;</button>
+    </div>
+    <div class="sp-body">
+      <div class="presets-save-row">
+        <input type="text" id="presetNameInput" placeholder="Configuration name…" maxlength="64" />
+        <button class="presets-action-btn" id="presetSaveBtn" type="button">Save</button>
+      </div>
+      <div class="presets-list" id="presetsList"></div>
     </div>
   </aside>
 
@@ -1541,7 +1767,7 @@
     const settingsPanel   = el('settings-panel');
     const settingsOverlay = el('settings-overlay');
 
-    function openSettings()  { settingsPanel.classList.add('open');    settingsOverlay.classList.add('open'); }
+    function openSettings()  { closePresets(); settingsPanel.classList.add('open');    settingsOverlay.classList.add('open'); }
     function closeSettings() { settingsPanel.classList.remove('open'); settingsOverlay.classList.remove('open'); }
 
     el('settingsBtn').addEventListener('click', openSettings);
@@ -1656,6 +1882,328 @@
       updateColorModeUI();
       redrawAll();
     });
+
+    function setRangePair(rangeId, valId, v, decimals) {
+      el(rangeId).value = v;
+      el(valId).value = typeof decimals === 'number' ? v.toFixed(decimals) : v;
+    }
+
+    function syncStyleInputsFromObject() {
+      el('s-page-bg-color').value = style.pageBgColor;
+      document.body.style.background = style.pageBgColor;
+      el('s-circle-bg-color').value = style.circleBgColor;
+      el('s-circle-bg-color-shaded').value = style.circleBgColor;
+      el('s-circle-shade').value = style.circleShade;
+      el('s-circle-bg-outer').value = style.circleBgOuter;
+      el('s-circle-bg-inner').value = style.circleBgInner;
+      setRangePair('s-shade-amount', 's-shade-amount-val', style.shadeAmount, 2);
+      setRangePair('s-shade-contrast', 's-shade-contrast-val', style.shadeContrast, 2);
+      setRangePair('s-shade-falloff', 's-shade-falloff-val', style.shadeFalloff, 2);
+      el('s-spot-hot-color').value = style.spotHotColor;
+      setRangePair('s-spot-size', 's-spot-size-val', style.spotSize, 2);
+      setRangePair('s-spot-bright', 's-spot-bright-val', style.spotBright, 2);
+      el('s-aurora-accent').value = style.auroraAccent;
+      setRangePair('s-aurora-band-pos', 's-aurora-band-pos-val', style.auroraBandPos, 2);
+      setRangePair('s-aurora-band-width', 's-aurora-band-width-val', style.auroraBandWidth, 2);
+      el('s-neon-glow-color').value = style.neonGlowColor;
+      setRangePair('s-neon-glow-width', 's-neon-glow-width-val', style.neonGlowWidth, 2);
+      setRangePair('s-neon-glow-bright', 's-neon-glow-bright-val', style.neonGlowBright, 2);
+      el('s-show-ring').checked = style.showRing;
+      el('s-ring-color').value = style.ringColor;
+      setRangePair('s-ring-width', 's-ring-width-val', style.ringWidth, 1);
+      el('s-show-dots').checked = style.showDots;
+      el('s-dot-color').value = style.dotColor;
+      setRangePair('s-dot-scale', 's-dot-scale-val', style.dotScale, 2);
+      setRangePair('s-line-width', 's-line-width-val', style.lineWidthMax, 1);
+      setRangePair('s-line-opacity', 's-line-opacity-val', style.lineOpacity, 2);
+      el('s-color-mode').value = style.colorMode;
+      setRangePair('s-hue-start', 's-hue-start-val', style.hueStart, 0);
+      setRangePair('s-hue-end', 's-hue-end-val', style.hueEnd, 0);
+      setRangePair('s-saturation', 's-saturation-val', style.saturation, 0);
+      setRangePair('s-lightness', 's-lightness-val', style.lightness, 0);
+      el('s-solid-color').value = style.solidColor;
+      updateShadeUI();
+      updateColorModeUI();
+    }
+
+    // ── Saved configurations (localStorage) ─────────────────────
+
+    const PRESETS_STORAGE_KEY = 'modArith-presets-v1';
+    const presetsPanel   = el('presets-panel');
+    const presetsOverlay = el('presets-overlay');
+    const presetsList    = el('presetsList');
+    const presetNameInput = el('presetNameInput');
+    let presets = [];
+    let openPresetId = null;
+
+    function openPresets()  { presetsPanel.classList.add('open');    presetsOverlay.classList.add('open'); }
+    function closePresets() { presetsPanel.classList.remove('open'); presetsOverlay.classList.remove('open'); }
+
+    el('presetsBtn').addEventListener('click', () => {
+      closeSettings();
+      openPresets();
+      renderPresetsList();
+    });
+    el('presetsClose').addEventListener('click', closePresets);
+    presetsOverlay.addEventListener('click', closePresets);
+
+    function defaultStyleSnapshot() {
+      return { ...style };
+    }
+
+    function captureCurrentConfig() {
+      return {
+        style: defaultStyleSnapshot(),
+        snapMultOnPause: el('s-snap-pause').checked,
+        mult,
+        multStep: multStep.value,
+        multLo: multLo.value,
+        multHi: multHi.value,
+        points,
+        pointsStep: pointsStep.value,
+        pointsLo: pointsLo.value,
+        pointsHi: pointsHi.value,
+      };
+    }
+
+    function normalizeStyleObject(s) {
+      const base = defaultStyleSnapshot();
+      if (!s || typeof s !== 'object') return base;
+      return { ...base, ...s };
+    }
+
+    function applyConfig(cfg) {
+      Object.assign(style, normalizeStyleObject(cfg.style));
+      syncStyleInputsFromObject();
+      el('s-snap-pause').checked = !!cfg.snapMultOnPause;
+
+      multStep.value   = cfg.multStep ?? multStep.value;
+      multLo.value     = cfg.multLo ?? multLo.value;
+      multHi.value     = cfg.multHi ?? multHi.value;
+      pointsStep.value = cfg.pointsStep ?? pointsStep.value;
+      pointsLo.value   = cfg.pointsLo ?? pointsLo.value;
+      pointsHi.value   = cfg.pointsHi ?? pointsHi.value;
+      applyStep(multSlider, multStep);
+      applyStep(pointsSlider, pointsStep);
+      pointsSlider.min = num(pointsLo);
+      pointsSlider.max = num(pointsHi);
+      multSlider.min = num(multLo);
+      multSlider.max = num(multHi);
+      syncPoints(cfg.points ?? points, false);
+      syncMult(cfg.mult ?? mult, false);
+      redrawAll();
+    }
+
+    function loadPresetsFromStorage() {
+      try {
+        const raw = localStorage.getItem(PRESETS_STORAGE_KEY);
+        const data = raw ? JSON.parse(raw) : [];
+        presets = Array.isArray(data) ? data : [];
+      } catch {
+        presets = [];
+      }
+    }
+
+    function savePresetsToStorage() {
+      localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(presets));
+    }
+
+    function presetSummary(cfg) {
+      const s = normalizeStyleObject(cfg.style);
+      return `mult ${cfg.mult} · ${cfg.points} pts · ${s.colorMode} · ${s.circleShade}`;
+    }
+
+    function createPreset(name, config) {
+      const now = Date.now();
+      return {
+        id: 'p_' + now + '_' + Math.random().toString(36).slice(2, 8),
+        name: name.trim(),
+        createdAt: now,
+        updatedAt: now,
+        config,
+      };
+    }
+
+    function addPreset(name) {
+      const trimmed = name.trim();
+      if (!trimmed) return false;
+      presets.unshift(createPreset(trimmed, captureCurrentConfig()));
+      savePresetsToStorage();
+      renderPresetsList();
+      return true;
+    }
+
+    function deletePreset(id) {
+      presets = presets.filter(p => p.id !== id);
+      if (openPresetId === id) openPresetId = null;
+      savePresetsToStorage();
+      renderPresetsList();
+    }
+
+    function readPresetDetails(itemEl) {
+      const num = sel => {
+        const v = parseFloat(itemEl.querySelector(sel).value);
+        return isNaN(v) ? 0 : v;
+      };
+      const styleText = itemEl.querySelector('.preset-style-json').value.trim();
+      let parsedStyle;
+      try {
+        parsedStyle = normalizeStyleObject(JSON.parse(styleText));
+        itemEl.querySelector('.preset-style-json').classList.remove('invalid');
+      } catch {
+        itemEl.querySelector('.preset-style-json').classList.add('invalid');
+        return null;
+      }
+      return {
+        name: itemEl.querySelector('.preset-name').value.trim(),
+        config: {
+          style: parsedStyle,
+          snapMultOnPause: itemEl.querySelector('[data-field="snapMultOnPause"]').checked,
+          mult: num('[data-field="mult"]'),
+          multStep: itemEl.querySelector('[data-field="multStep"]').value,
+          multLo: num('[data-field="multLo"]'),
+          multHi: num('[data-field="multHi"]'),
+          points: Math.round(num('[data-field="points"]')),
+          pointsStep: itemEl.querySelector('[data-field="pointsStep"]').value,
+          pointsLo: num('[data-field="pointsLo"]'),
+          pointsHi: num('[data-field="pointsHi"]'),
+        },
+      };
+    }
+
+    function savePresetEdits(id) {
+      const itemEl = presetsList.querySelector(`[data-id="${id}"]`);
+      if (!itemEl) return;
+      const edits = readPresetDetails(itemEl);
+      if (!edits || !edits.name) return;
+      const preset = presets.find(p => p.id === id);
+      if (!preset) return;
+      preset.name = edits.name;
+      preset.config = edits.config;
+      preset.updatedAt = Date.now();
+      savePresetsToStorage();
+      renderPresetsList();
+      openPresetId = id;
+    }
+
+    function overwritePreset(id) {
+      const preset = presets.find(p => p.id === id);
+      if (!preset) return;
+      preset.config = captureCurrentConfig();
+      preset.updatedAt = Date.now();
+      savePresetsToStorage();
+      renderPresetsList();
+      openPresetId = id;
+    }
+
+    function renderPresetItem(preset) {
+      const c = preset.config;
+      const s = normalizeStyleObject(c.style);
+      const item = document.createElement('div');
+      item.className = 'preset-item';
+      item.dataset.id = preset.id;
+
+      const summary = document.createElement('div');
+      summary.className = 'preset-summary';
+      summary.textContent = presetSummary(c);
+
+      const header = document.createElement('div');
+      header.className = 'preset-item-header';
+      header.innerHTML = `
+        <input class="preset-name" type="text" value="${escapeAttr(preset.name)}" maxlength="64" />
+        <div class="preset-header-btns">
+          <button class="preset-mini-btn load" type="button" data-action="load">Load</button>
+          <button class="preset-mini-btn" type="button" data-action="toggle">${openPresetId === preset.id ? '▲' : '▼'}</button>
+        </div>
+      `;
+
+      const details = document.createElement('div');
+      details.className = 'preset-details' + (openPresetId === preset.id ? ' open' : '');
+      details.innerHTML = `
+        <div class="preset-field-grid">
+          <div class="preset-field"><label>Multiplier</label><input data-field="mult" type="number" step="any" value="${c.mult}" /></div>
+          <div class="preset-field"><label>Mult step</label><input data-field="multStep" type="number" step="any" value="${escapeAttr(c.multStep)}" /></div>
+          <div class="preset-field"><label>Mult lo</label><input data-field="multLo" type="number" step="any" value="${c.multLo}" /></div>
+          <div class="preset-field"><label>Mult hi</label><input data-field="multHi" type="number" step="any" value="${c.multHi}" /></div>
+          <div class="preset-field"><label>Points</label><input data-field="points" type="number" step="1" value="${c.points}" /></div>
+          <div class="preset-field"><label>Points step</label><input data-field="pointsStep" type="number" step="any" value="${escapeAttr(c.pointsStep)}" /></div>
+          <div class="preset-field"><label>Points lo</label><input data-field="pointsLo" type="number" step="1" value="${c.pointsLo}" /></div>
+          <div class="preset-field"><label>Points hi</label><input data-field="pointsHi" type="number" step="1" value="${c.pointsHi}" /></div>
+        </div>
+        <label class="preset-field" style="display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;color:#aaa;text-transform:none;letter-spacing:0;">
+          <input data-field="snapMultOnPause" type="checkbox" ${c.snapMultOnPause ? 'checked' : ''} />
+          Snap multi on pause
+        </label>
+        <div>
+          <div class="preset-style-label">Style settings (JSON)</div>
+          <textarea class="preset-style-json" spellcheck="false">${escapeHtml(JSON.stringify(s, null, 2))}</textarea>
+        </div>
+        <div class="preset-detail-actions">
+          <button class="presets-action-btn" type="button" data-action="save-edits">Save edits</button>
+          <button class="presets-action-btn" type="button" data-action="overwrite">Update from current</button>
+          <button class="presets-action-btn danger" type="button" data-action="delete">Delete</button>
+        </div>
+      `;
+
+      item.appendChild(header);
+      item.appendChild(summary);
+      item.appendChild(details);
+
+      header.querySelector('[data-action="load"]').addEventListener('click', () => {
+        applyConfig(preset.config);
+        closePresets();
+      });
+      header.querySelector('[data-action="toggle"]').addEventListener('click', () => {
+        openPresetId = openPresetId === preset.id ? null : preset.id;
+        renderPresetsList();
+      });
+      details.querySelector('[data-action="save-edits"]').addEventListener('click', () => savePresetEdits(preset.id));
+      details.querySelector('[data-action="overwrite"]').addEventListener('click', () => overwritePreset(preset.id));
+      details.querySelector('[data-action="delete"]').addEventListener('click', () => {
+        if (confirm(`Delete "${preset.name}"?`)) deletePreset(preset.id);
+      });
+
+      item.querySelector('.preset-name').addEventListener('change', () => savePresetEdits(preset.id));
+
+      return item;
+    }
+
+    function escapeAttr(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;');
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function renderPresetsList() {
+      presetsList.innerHTML = '';
+      if (!presets.length) {
+        const empty = document.createElement('div');
+        empty.className = 'presets-empty';
+        empty.textContent = 'No saved configurations yet. Adjust your settings, enter a name above, and click Save.';
+        presetsList.appendChild(empty);
+        return;
+      }
+      presets.forEach(p => presetsList.appendChild(renderPresetItem(p)));
+    }
+
+    el('presetSaveBtn').addEventListener('click', () => {
+      if (addPreset(presetNameInput.value)) presetNameInput.value = '';
+    });
+    presetNameInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        if (addPreset(presetNameInput.value)) presetNameInput.value = '';
+      }
+    });
+
+    loadPresetsFromStorage();
 
     // ── Path length analysis ──────────────────────────────────────
 
