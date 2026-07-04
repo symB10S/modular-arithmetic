@@ -566,11 +566,26 @@
     input[type="number"].sp-val::-webkit-inner-spin-button,
     input[type="number"].sp-val::-webkit-outer-spin-button { -webkit-appearance: none; }
     input[type="number"].sp-val:focus { outline: none; border-bottom-color: #a78bfa; }
-    .sp-row input[type="checkbox"] {
+    .sp-row input[type="checkbox"],
+    .sp-row input[type="radio"] {
       width: 16px;
       height: 16px;
       cursor: pointer;
       accent-color: #a78bfa;
+    }
+    .sp-radio-group {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      flex: 1;
+    }
+    .sp-radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      width: auto;
+      color: #aaa;
+      cursor: pointer;
     }
     .sp-row.hidden { display: none; }
 
@@ -1409,6 +1424,22 @@
           <label for="s-snap-pause">Snap multi on pause</label>
           <input type="checkbox" id="s-snap-pause" />
         </div>
+        <div class="sp-row">
+          <span title="When enabled, changing a circle's points scales its multiplier step and end bound so all circles finish together">Align end time</span>
+          <div class="sp-radio-group" role="radiogroup" aria-label="Align end time for multi circles">
+            <label><input type="radio" name="align-end-time" id="s-align-end-on" value="on" /> On</label>
+            <label><input type="radio" name="align-end-time" id="s-align-end-off" value="off" checked /> Off</label>
+          </div>
+        </div>
+        <div class="sp-effect-hint">Keeps points ÷ step equal across circles; end multiplier follows points.</div>
+        <div class="sp-row">
+          <label for="s-align-end-points">Ref. points</label>
+          <input type="number" class="sp-val" id="s-align-end-points" value="100" min="1" step="1" style="flex:1;max-width:none;width:auto;text-align:left;" />
+        </div>
+        <div class="sp-row">
+          <label for="s-align-end-step">Ref. step</label>
+          <input type="number" class="sp-val" id="s-align-end-step" value="1" min="0.0001" step="any" style="flex:1;max-width:none;width:auto;text-align:left;" />
+        </div>
       </div>
 
       <div class="sp-section" id="slider-effects-section">
@@ -1772,12 +1803,13 @@
     }
 
     function getSelectedCircle() {
-      return circles.find(c => c.id === selectedCircleId) || circles[0] || null;
+      if (!selectedCircleId) return null;
+      return circles.find(c => c.id === selectedCircleId) || null;
     }
 
     function selectCircle(id) {
       if (!circles.some(c => c.id === id)) return;
-      if (multiMode) pushControlsToCircle();
+      if (multiMode && selectedCircleId) pushControlsToCircle();
       selectedCircleId = id;
       if (multiMode) pullControlsFromCircle();
       renderCircleTabs();
@@ -1806,7 +1838,8 @@
     }
 
     function pushControlsToCircle() {
-      const c = getSelectedCircle();
+      if (!selectedCircleId) return;
+      const c = circles.find(x => x.id === selectedCircleId);
       if (!c) return;
       c.multLo = num(multLo);
       c.multHi = num(multHi);
@@ -2013,6 +2046,22 @@
       if (redraw) draw();
     }
 
+    function isAlignEndTimeEnabled() {
+      return el('s-align-end-on').checked;
+    }
+
+    function applyAlignEndTimeToCircle(c, pts) {
+      const refPoints = Math.max(1, num(el('s-align-end-points')));
+      const refStep = parseFloat(el('s-align-end-step').value) || 1;
+      const newStep = pts * refStep / refPoints;
+      c.multStep = newStep;
+      c.multHi = pts;
+      multStep.value = newStep;
+      multHi.value = pts;
+      applyStep(multSlider, multStep);
+      multSlider.max = Math.max(num(multLo), pts);
+    }
+
     function syncPoints(v, redraw = true) {
       const lo = num(pointsLo);
       const requested = isNaN(parseFloat(v)) ? lo : Math.round(parseFloat(v));
@@ -2032,7 +2081,9 @@
         const c = getSelectedCircle();
         if (c) {
           c.points = points;
-          if (c.multHi < points) {
+          if (isAlignEndTimeEnabled()) {
+            applyAlignEndTimeToCircle(c, points);
+          } else if (c.multHi < points) {
             c.multHi = points;
             multHi.value = points;
             multSlider.max = points;
@@ -3508,6 +3559,9 @@
       const cfg = {
         style: defaultStyleSnapshot(),
         snapMultOnPause: el('s-snap-pause').checked,
+        alignEndTimeEnabled: isAlignEndTimeEnabled(),
+        alignEndTimePoints: num(el('s-align-end-points')),
+        alignEndTimeStep: el('s-align-end-step').value,
         sliderEffects: cloneEffectsState(),
         effectsMaster: el('s-effects-master').checked,
         multiMode,
@@ -3583,6 +3637,10 @@
       Object.assign(style, normalizeStyleObject(cfg.style));
       syncStyleInputsFromObject();
       el('s-snap-pause').checked = !!cfg.snapMultOnPause;
+      el('s-align-end-on').checked = !!cfg.alignEndTimeEnabled;
+      el('s-align-end-off').checked = !cfg.alignEndTimeEnabled;
+      el('s-align-end-points').value = cfg.alignEndTimePoints ?? 100;
+      el('s-align-end-step').value = cfg.alignEndTimeStep ?? 1;
       restoreSliderEffects(cfg.sliderEffects);
       el('s-effects-master').checked = !!cfg.effectsMaster;
       syncAnimationLoop();
@@ -3703,6 +3761,9 @@
         config: {
           style: parsedStyle,
           snapMultOnPause: itemEl.querySelector('[data-field="snapMultOnPause"]').checked,
+          alignEndTimeEnabled: itemEl.querySelector('[data-field="alignEndTimeEnabled"]')?.checked || false,
+          alignEndTimePoints: Math.round(num('[data-field="alignEndTimePoints"]')),
+          alignEndTimeStep: itemEl.querySelector('[data-field="alignEndTimeStep"]')?.value ?? '1',
           multiMode: itemEl.querySelector('[data-field="multiMode"]')?.checked || false,
           mult: num('[data-field="mult"]'),
           multStep: itemEl.querySelector('[data-field="multStep"]').value,
@@ -3814,6 +3875,12 @@
           <input data-field="snapMultOnPause" type="checkbox" ${c.snapMultOnPause ? 'checked' : ''} />
           Snap multi on pause
         </label>
+        <label class="preset-field" style="display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;color:#aaa;text-transform:none;letter-spacing:0;">
+          <input data-field="alignEndTimeEnabled" type="checkbox" ${c.alignEndTimeEnabled ? 'checked' : ''} />
+          Align end time (multi)
+        </label>
+        <div class="preset-field"><label>Align ref points</label><input data-field="alignEndTimePoints" type="number" step="1" min="1" value="${c.alignEndTimePoints ?? 100}" /></div>
+        <div class="preset-field"><label>Align ref step</label><input data-field="alignEndTimeStep" type="number" step="any" value="${escapeAttr(c.alignEndTimeStep ?? 1)}" /></div>
         <div>
           <div class="preset-style-label">Style settings (JSON)</div>
           <textarea class="preset-style-json" spellcheck="false">${escapeHtml(JSON.stringify(s, null, 2))}</textarea>
