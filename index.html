@@ -497,6 +497,189 @@
     }
     .sp-row.hidden { display: none; }
 
+    /* ── Slider effects ─────────────────────────────────────────── */
+    .sp-effect-mode-btn {
+      flex: 1;
+      background: #111;
+      border: 1px solid #2e2e2e;
+      border-radius: 5px;
+      color: #888;
+      font-size: 0.78rem;
+      padding: 5px 8px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+    .sp-effect-mode-btn:hover { color: #ccc; border-color: #444; }
+    .sp-effect-mode-btn.active {
+      color: #a78bfa;
+      border-color: #a78bfa;
+      background: rgba(167, 139, 250, 0.08);
+    }
+    .sp-effect-hint {
+      font-size: 0.7rem;
+      color: #666;
+      line-height: 1.35;
+      padding: 0.15rem 0.1rem 0.25rem;
+    }
+    .sp-effect-hint.active { color: #a78bfa; }
+    #settings-panel.add-effect-mode .sp-slider-row {
+      cursor: pointer;
+      border-radius: 5px;
+      outline: 1px dashed transparent;
+      outline-offset: 2px;
+      transition: outline-color 0.15s, background 0.15s;
+    }
+    #settings-panel.add-effect-mode .sp-slider-row:hover {
+      outline-color: #6d5cae;
+      background: rgba(167, 139, 250, 0.06);
+    }
+    .sp-slider-row.has-effect {
+      position: relative;
+    }
+    .sp-slider-row.has-effect::after {
+      content: '~';
+      position: absolute;
+      right: -2px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.65rem;
+      color: #a78bfa;
+      font-weight: 700;
+      pointer-events: none;
+    }
+    .sp-effect-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      padding: 0.45rem 0.5rem;
+      background: #141414;
+      border: 1px solid #333;
+      border-radius: 6px;
+      margin-top: 0.35rem;
+    }
+    .sp-effect-item.disabled { opacity: 0.55; }
+    .sp-effect-item-head {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .sp-effect-item-head label {
+      flex: 1;
+      font-size: 0.76rem;
+      color: #ccc;
+      width: auto;
+    }
+    .sp-effect-remove {
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      font-size: 0.85rem;
+      padding: 2px 5px;
+      border-radius: 3px;
+      line-height: 1;
+    }
+    .sp-effect-remove:hover { color: #f87171; background: rgba(248,113,113,0.1); }
+    .sp-effect-item .sp-row { min-height: 24px; }
+    .sp-effect-item .sp-row label { width: 58px; font-size: 0.72rem; }
+    .sp-effect-item select {
+      flex: 1;
+      background: #111;
+      border: 1px solid #2e2e2e;
+      border-radius: 5px;
+      color: #a78bfa;
+      font-size: 0.74rem;
+      padding: 3px 5px;
+      cursor: pointer;
+    }
+    .sp-carrier-toolbar {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+      margin-top: 0.15rem;
+    }
+    .sp-carrier-add-btn {
+      flex-shrink: 0;
+      background: #1a1a2e;
+      border: 1px solid #4c3d8f;
+      border-radius: 5px;
+      color: #a78bfa;
+      font-size: 0.74rem;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+    .sp-carrier-add-btn:hover { background: #252540; }
+    .sp-carrier-active-sel {
+      flex: 1;
+      min-width: 0;
+      background: #111;
+      border: 1px solid #2e2e2e;
+      border-radius: 5px;
+      color: #ccc;
+      font-size: 0.74rem;
+      padding: 4px 6px;
+      cursor: pointer;
+    }
+    .sp-carrier-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      padding: 0.5rem 0.55rem;
+      background: #18181f;
+      border: 1px solid #3d3d55;
+      border-radius: 8px;
+      margin-top: 0.45rem;
+    }
+    .sp-carrier-card.active-carrier { border-color: #7c6cf0; box-shadow: 0 0 0 1px rgba(124,108,240,0.25); }
+    .sp-carrier-card.disabled { opacity: 0.55; }
+    .sp-carrier-card-head {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .sp-carrier-card-head input[type="text"] {
+      flex: 1;
+      min-width: 0;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid #333;
+      color: #e0e0e0;
+      font-size: 0.78rem;
+      padding: 2px 0;
+    }
+    .sp-carrier-card-head input[type="text"]:focus { outline: none; border-bottom-color: #a78bfa; }
+    .sp-carrier-use-btn {
+      background: none;
+      border: 1px solid #333;
+      border-radius: 4px;
+      color: #888;
+      font-size: 0.68rem;
+      padding: 2px 6px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .sp-carrier-use-btn.active { color: #a78bfa; border-color: #7c6cf0; }
+    .sp-carrier-mappings {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      padding-top: 0.2rem;
+      border-top: 1px solid #2a2a38;
+    }
+    .sp-carrier-mappings:empty::before {
+      content: 'No sliders — use Add Effect to assign';
+      font-size: 0.68rem;
+      color: #555;
+      font-style: italic;
+    }
+    .sp-mapping-item {
+      padding: 0.35rem 0.4rem;
+      background: #121218;
+      border: 1px solid #2e2e38;
+      border-radius: 5px;
+    }
+    .sp-mapping-item.disabled { opacity: 0.5; }
+
     /* ── Presets panel ───────────────────────────────────────────── */
     #presets-overlay {
       display: none;
@@ -580,12 +763,30 @@
       border: 1px solid #383838;
       border-radius: 8px;
       overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .preset-item:hover {
+      border-color: #a78bfa;
     }
     .preset-item-header {
       display: flex;
       align-items: center;
-      gap: 0.35rem;
+      gap: 0.45rem;
       padding: 0.45rem 0.55rem;
+    }
+    .preset-thumb {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      object-fit: cover;
+      background: #0d0d0d;
+      border: 1px solid #333;
+    }
+    .preset-thumb.placeholder {
+      opacity: 0.35;
+      background: #111;
     }
     .preset-name {
       flex: 1;
@@ -1082,6 +1283,24 @@
         </div>
       </div>
 
+      <div class="sp-section" id="slider-effects-section">
+        <div class="sp-section-title">Slider Effects</div>
+        <div class="sp-row">
+          <label for="s-effects-master">Play effects</label>
+          <input type="checkbox" id="s-effects-master" />
+        </div>
+        <div class="sp-row">
+          <label for="s-add-effect-mode">Add effect</label>
+          <button type="button" class="sp-effect-mode-btn" id="s-add-effect-mode">Off</button>
+        </div>
+        <div class="sp-effect-hint" id="s-effect-hint">Add a carrier wave, select it, turn on Add Effect, then click sliders to assign.</div>
+        <div class="sp-carrier-toolbar">
+          <button type="button" class="sp-carrier-add-btn" id="s-carrier-add">+ Carrier</button>
+          <select class="sp-carrier-active-sel" id="s-carrier-active" title="Active carrier for Add Effect"></select>
+        </div>
+        <div id="s-effects-list"></div>
+      </div>
+
       <div class="sp-section">
         <div class="sp-section-title">Background</div>
         <div class="sp-row">
@@ -1439,11 +1658,18 @@
       const active = btn.classList.toggle('active');
       btn.innerHTML = active ? '&#9646;&#9646;' : '&#9654;';
       flagSetter(active);
-      const anyPlaying = multPlaying || pointsPlaying;
-      if (anyPlaying && !rafId) {
+      syncAnimationLoop();
+    }
+
+    function isAnimationActive() {
+      return multPlaying || pointsPlaying || sliderEffectsPlaying();
+    }
+
+    function syncAnimationLoop() {
+      if (isAnimationActive() && !rafId) {
         lastTime = null;
         rafId = requestAnimationFrame(animate);
-      } else if (!anyPlaying && rafId) {
+      } else if (!isAnimationActive() && rafId) {
         cancelAnimationFrame(rafId);
         rafId = null;
       }
@@ -1492,8 +1718,16 @@
         pointsNum.value    = points;
       }
 
+      if (sliderEffectsPlaying()) {
+        tickSliderEffects(ts);
+      }
+
       draw();
-      rafId = requestAnimationFrame(animate);
+      if (isAnimationActive()) {
+        rafId = requestAnimationFrame(animate);
+      } else {
+        rafId = null;
+      }
     }
 
     // ── canvas sizing ─────────────────────────────────────────────
@@ -1692,7 +1926,19 @@
       }
     }
 
-    function draw() { drawCircle(ctx, canvas, mult, points); }
+    let presetPreview = null;
+
+    function draw() {
+      if (presetPreview) {
+        const c = presetPreview;
+        const prev = { ...style };
+        Object.assign(style, normalizeStyleObject(c.style));
+        drawCircle(ctx, canvas, Number(c.mult), Math.round(Number(c.points)));
+        Object.assign(style, prev);
+      } else {
+        drawCircle(ctx, canvas, mult, points);
+      }
+    }
 
     window.addEventListener('resize', () => {
       sizeCanvas();
@@ -1768,7 +2014,11 @@
     const settingsOverlay = el('settings-overlay');
 
     function openSettings()  { closePresets(); settingsPanel.classList.add('open');    settingsOverlay.classList.add('open'); }
-    function closeSettings() { settingsPanel.classList.remove('open'); settingsOverlay.classList.remove('open'); }
+    function closeSettings() {
+      settingsPanel.classList.remove('open');
+      settingsOverlay.classList.remove('open');
+      setAddEffectMode(false);
+    }
 
     el('settingsBtn').addEventListener('click', openSettings);
     el('settingsClose').addEventListener('click', closeSettings);
@@ -1801,12 +2051,20 @@
       if (analysisResultsVisible()) updateAnalysisCircle();
     }
 
+    const SLIDER_REGISTRY = {};
+
     function bindRange(id, valId, prop, suffix, decimals) {
       const inp = el(id), valEl = el(valId);
+      const row = inp.closest('.sp-row');
+      if (row) row.classList.add('sp-slider-row');
+      const labelEl = row?.querySelector('label');
+      SLIDER_REGISTRY[id] = { rangeId: id, valId, prop, decimals, label: labelEl?.textContent.trim() || prop };
+
       inp.addEventListener('input', () => {
         const v = parseFloat(inp.value);
         style[prop] = v;
         valEl.value = v.toFixed(decimals);
+        updateSliderEffectCenter(id, v);
         redrawAll();
       });
       valEl.addEventListener('change', () => {
@@ -1816,6 +2074,7 @@
         style[prop] = v;
         inp.value = v;
         valEl.value = v.toFixed(decimals);
+        updateSliderEffectCenter(id, v);
         redrawAll();
       });
     }
@@ -1877,6 +2136,504 @@
     bindRange('s-lightness',    's-lightness-val',    'lightness',    '%', 0);
     bindColor('s-solid-color',  'solidColor');
 
+    // ── Slider waveform effects (carrier + mappings) ────────────────
+
+    const WAVEFORMS = [
+      { id: 'sine',      label: 'Sine' },
+      { id: 'triangle',  label: 'Triangle' },
+      { id: 'sawtooth',  label: 'Sawtooth' },
+      { id: 'square',    label: 'Square' },
+      { id: 'pingpong',  label: 'Ping-pong' },
+    ];
+
+    const waveCarriers = {};
+    const sliderMappings = {};
+    let activeCarrierId = null;
+    let addEffectMode = false;
+    let effectsEpoch = performance.now();
+    let carrierNameCounter = 1;
+
+    function newCarrierId() {
+      return 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    }
+
+    function defaultCarrier(name) {
+      return {
+        id: newCarrierId(),
+        name: name || ('Carrier ' + carrierNameCounter++),
+        enabled: true,
+        waveform: 'sine',
+        period: 4,
+        offset: 0.5,
+        amplitude: 0.5,
+      };
+    }
+
+    function sliderRangeMeta(rangeId) {
+      const meta = SLIDER_REGISTRY[rangeId];
+      const inp = el(rangeId);
+      if (!inp) return null;
+      const min = parseFloat(inp.min), max = parseFloat(inp.max);
+      const current = parseFloat(inp.value);
+      return { meta, min, max, current, span: max - min };
+    }
+
+    function defaultMapping(rangeId, carrierId) {
+      const rm = sliderRangeMeta(rangeId);
+      if (!rm) return null;
+      return {
+        rangeId,
+        carrierId,
+        enabled: true,
+        phaseOffset: 0,
+        initialValue: rm.current,
+        amplitude: rm.span * 0.25,
+        bounds: 'clamp',
+        label: rm.meta?.label || rangeId,
+      };
+    }
+
+    function cloneEffectsState() {
+      return {
+        waveCarriers: JSON.parse(JSON.stringify(waveCarriers)),
+        sliderMappings: JSON.parse(JSON.stringify(sliderMappings)),
+        activeCarrierId,
+      };
+    }
+
+    function migrateLegacySliderEffects(data) {
+      if (!data || typeof data !== 'object') return null;
+      if (data.waveCarriers) return data;
+      const entries = Object.values(data);
+      if (!entries.length || !entries[0].rangeId) return null;
+      const carrier = defaultCarrier('Carrier 1');
+      const mappings = {};
+      for (const old of entries) {
+        if (!SLIDER_REGISTRY[old.rangeId]) continue;
+        const rm = sliderRangeMeta(old.rangeId);
+        if (!rm) continue;
+        const span = rm.span * (old.depth ?? 0.5) * 0.5;
+        mappings[old.rangeId] = {
+          rangeId: old.rangeId,
+          carrierId: carrier.id,
+          enabled: old.enabled !== false,
+          phaseOffset: old.phase ?? 0,
+          initialValue: old.center ?? rm.current,
+          amplitude: span * 2,
+          bounds: 'clamp',
+          label: old.label || rm.meta?.label || old.rangeId,
+        };
+      }
+      return {
+        waveCarriers: { [carrier.id]: carrier },
+        sliderMappings: mappings,
+        activeCarrierId: carrier.id,
+      };
+    }
+
+    function restoreSliderEffects(data) {
+      Object.keys(waveCarriers).forEach(k => delete waveCarriers[k]);
+      Object.keys(sliderMappings).forEach(k => delete sliderMappings[k]);
+      activeCarrierId = null;
+
+      const migrated = migrateLegacySliderEffects(data);
+      const state = migrated || data;
+      if (state && typeof state === 'object') {
+        const parsed = JSON.parse(JSON.stringify(state));
+        Object.assign(waveCarriers, parsed.waveCarriers || {});
+        for (const [rangeId, saved] of Object.entries(parsed.sliderMappings || {})) {
+          if (!SLIDER_REGISTRY[rangeId]) continue;
+          const carrierId = saved.carrierId;
+          if (!carrierId || !waveCarriers[carrierId]) continue;
+          sliderMappings[rangeId] = { ...defaultMapping(rangeId, carrierId), ...saved };
+        }
+        if (parsed.activeCarrierId && waveCarriers[parsed.activeCarrierId]) {
+          activeCarrierId = parsed.activeCarrierId;
+        }
+      }
+      if (!activeCarrierId && Object.keys(waveCarriers).length) {
+        activeCarrierId = Object.keys(waveCarriers)[0];
+      }
+      renderEffectsList();
+      refreshEffectRowMarkers();
+      syncEffectsMasterCheckbox();
+      syncAnimationLoop();
+    }
+
+    function sliderEffectsPlaying() {
+      if (!el('s-effects-master').checked) return false;
+      return Object.values(waveCarriers).some(c =>
+        c.enabled && Object.values(sliderMappings).some(m => m.carrierId === c.id && m.enabled)
+      );
+    }
+
+    function waveformAt(wave, phase) {
+      const t = ((phase % 1) + 1) % 1;
+      switch (wave) {
+        case 'sine':
+          return (Math.sin(t * Math.PI * 2) + 1) * 0.5;
+        case 'triangle':
+          return t < 0.5 ? t * 2 : 2 - t * 2;
+        case 'sawtooth':
+          return t;
+        case 'square':
+          return t < 0.5 ? 0 : 1;
+        case 'pingpong':
+        default:
+          return t < 0.5 ? t * 2 : 2 - t * 2;
+      }
+    }
+
+    function carrierSignal(carrier, phase) {
+      const w = waveformAt(carrier.waveform, phase);
+      const deviation = (w - 0.5) * 2;
+      return carrier.offset + deviation * carrier.amplitude;
+    }
+
+    function applyMappingValue(mapping, v) {
+      const meta = SLIDER_REGISTRY[mapping.rangeId];
+      const inp = el(mapping.rangeId);
+      const valEl = meta ? el(meta.valId) : null;
+      if (meta?.prop) style[meta.prop] = v;
+      inp.value = v;
+      if (valEl) valEl.value = v.toFixed(meta?.decimals ?? 2);
+    }
+
+    function applyBounds(value, min, max, bounds) {
+      if (bounds === 'wrap') return wrapAnim(value, min, max);
+      return clamp(value, min, max);
+    }
+
+    function tickSliderEffects(ts) {
+      let changed = false;
+      const elapsed = (ts - effectsEpoch) / 1000;
+
+      for (const carrier of Object.values(waveCarriers)) {
+        if (!carrier.enabled || carrier.period <= 0) continue;
+        const basePhase = elapsed / carrier.period;
+
+        for (const mapping of Object.values(sliderMappings)) {
+          if (!mapping.enabled || mapping.carrierId !== carrier.id) continue;
+          const inp = el(mapping.rangeId);
+          if (!inp) continue;
+
+          const min = parseFloat(inp.min), max = parseFloat(inp.max);
+          const phase = basePhase + (mapping.phaseOffset || 0);
+          const c = carrierSignal(carrier, phase);
+          const carrierAmp = carrier.amplitude || 0;
+          const normDev = carrierAmp > 0 ? (c - carrier.offset) / carrierAmp : 0;
+          let value = mapping.initialValue + normDev * mapping.amplitude;
+          value = applyBounds(value, min, max, mapping.bounds);
+
+          applyMappingValue(mapping, value);
+          changed = true;
+        }
+      }
+      if (changed && analysisResultsVisible()) updateAnalysisCircle();
+    }
+
+    function updateSliderEffectCenter(rangeId, v) {
+      const mapping = sliderMappings[rangeId];
+      if (mapping) mapping.initialValue = v;
+    }
+
+    function refreshEffectRowMarkers() {
+      document.querySelectorAll('#settings-panel .sp-slider-row').forEach(row => {
+        const range = row.querySelector('input[type="range"]');
+        row.classList.toggle('has-effect', !!(range && sliderMappings[range.id]));
+      });
+    }
+
+    function bindParamRow(parent, label, value, min, max, step, decimals, onChange) {
+      const row = document.createElement('div');
+      row.className = 'sp-row';
+      const lbl = document.createElement('label');
+      lbl.textContent = label;
+      const range = document.createElement('input');
+      range.type = 'range';
+      range.min = min;
+      range.max = max;
+      range.step = step;
+      range.value = value;
+      const num = document.createElement('input');
+      num.type = 'number';
+      num.className = 'sp-val';
+      num.min = min;
+      num.max = max;
+      num.step = step;
+      num.value = typeof decimals === 'number' ? Number(value).toFixed(decimals) : value;
+      const sync = v => {
+        const clamped = clamp(v, min, max);
+        range.value = clamped;
+        num.value = typeof decimals === 'number' ? clamped.toFixed(decimals) : clamped;
+        onChange(clamped);
+      };
+      range.addEventListener('input', () => sync(parseFloat(range.value)));
+      num.addEventListener('change', () => sync(parseFloat(num.value)));
+      row.append(lbl, range, num);
+      parent.appendChild(row);
+    }
+
+    function renderMappingItem(mapping, container) {
+      const rm = sliderRangeMeta(mapping.rangeId);
+      if (!rm) return;
+
+      const item = document.createElement('div');
+      item.className = 'sp-mapping-item' + (mapping.enabled ? '' : ' disabled');
+
+      const head = document.createElement('div');
+      head.className = 'sp-effect-item-head';
+
+      const enCheck = document.createElement('input');
+      enCheck.type = 'checkbox';
+      enCheck.checked = mapping.enabled;
+      enCheck.title = 'Enable mapping';
+      enCheck.addEventListener('change', () => {
+        mapping.enabled = enCheck.checked;
+        item.classList.toggle('disabled', !mapping.enabled);
+        syncEffectsMasterCheckbox();
+        syncAnimationLoop();
+      });
+
+      const title = document.createElement('label');
+      title.textContent = mapping.label;
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'sp-effect-remove';
+      removeBtn.title = 'Remove slider';
+      removeBtn.innerHTML = '&#10005;';
+      removeBtn.addEventListener('click', () => {
+        delete sliderMappings[mapping.rangeId];
+        renderEffectsList();
+        refreshEffectRowMarkers();
+        syncEffectsMasterCheckbox();
+        syncAnimationLoop();
+      });
+
+      head.append(enCheck, title, removeBtn);
+      item.appendChild(head);
+
+      bindParamRow(item, 'Phase', mapping.phaseOffset, 0, 1, 0.01, 2, v => { mapping.phaseOffset = v; });
+      bindParamRow(item, 'Initial', mapping.initialValue, rm.min, rm.max, rm.meta?.decimals === 0 ? 1 : 0.01, rm.meta?.decimals ?? 2, v => { mapping.initialValue = v; });
+      bindParamRow(item, 'Amp', mapping.amplitude, 0, rm.span, rm.meta?.decimals === 0 ? 1 : 0.01, rm.meta?.decimals ?? 2, v => { mapping.amplitude = v; });
+
+      const boundsRow = document.createElement('div');
+      boundsRow.className = 'sp-row';
+      const boundsLbl = document.createElement('label');
+      boundsLbl.textContent = 'Bounds';
+      const boundsSel = document.createElement('select');
+      [['clamp', 'Clamp'], ['wrap', 'Wrap']].forEach(([val, text]) => {
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = text;
+        if (mapping.bounds === val) opt.selected = true;
+        boundsSel.appendChild(opt);
+      });
+      boundsSel.addEventListener('change', () => { mapping.bounds = boundsSel.value; });
+      boundsRow.append(boundsLbl, boundsSel);
+      item.appendChild(boundsRow);
+
+      container.appendChild(item);
+    }
+
+    function renderEffectsList() {
+      const list = el('s-effects-list');
+      const activeSel = el('s-carrier-active');
+      list.innerHTML = '';
+      activeSel.innerHTML = '';
+
+      const carriers = Object.values(waveCarriers);
+      if (!carriers.length) {
+        activeSel.disabled = true;
+        const opt = document.createElement('option');
+        opt.textContent = 'No carriers';
+        activeSel.appendChild(opt);
+        return;
+      }
+
+      activeSel.disabled = false;
+      carriers.forEach(carrier => {
+        const opt = document.createElement('option');
+        opt.value = carrier.id;
+        opt.textContent = carrier.name;
+        if (carrier.id === activeCarrierId) opt.selected = true;
+        activeSel.appendChild(opt);
+      });
+      if (!activeCarrierId || !waveCarriers[activeCarrierId]) {
+        activeCarrierId = carriers[0].id;
+        activeSel.value = activeCarrierId;
+      }
+
+      carriers.forEach(carrier => {
+        const card = document.createElement('div');
+        card.className = 'sp-carrier-card'
+          + (carrier.enabled ? '' : ' disabled')
+          + (carrier.id === activeCarrierId ? ' active-carrier' : '');
+
+        const head = document.createElement('div');
+        head.className = 'sp-carrier-card-head';
+
+        const enCheck = document.createElement('input');
+        enCheck.type = 'checkbox';
+        enCheck.checked = carrier.enabled;
+        enCheck.title = 'Enable carrier';
+        enCheck.addEventListener('change', () => {
+          carrier.enabled = enCheck.checked;
+          card.classList.toggle('disabled', !carrier.enabled);
+          syncEffectsMasterCheckbox();
+          syncAnimationLoop();
+        });
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.value = carrier.name;
+        nameInput.maxLength = 32;
+        nameInput.addEventListener('change', () => {
+          carrier.name = nameInput.value.trim() || carrier.name;
+          nameInput.value = carrier.name;
+          renderEffectsList();
+        });
+
+        const useBtn = document.createElement('button');
+        useBtn.type = 'button';
+        useBtn.className = 'sp-carrier-use-btn' + (carrier.id === activeCarrierId ? ' active' : '');
+        useBtn.textContent = carrier.id === activeCarrierId ? 'Active' : 'Use';
+        useBtn.addEventListener('click', () => {
+          activeCarrierId = carrier.id;
+          el('s-carrier-active').value = carrier.id;
+          renderEffectsList();
+        });
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'sp-effect-remove';
+        removeBtn.title = 'Remove carrier';
+        removeBtn.innerHTML = '&#10005;';
+        removeBtn.addEventListener('click', () => {
+          Object.keys(sliderMappings).forEach(rangeId => {
+            if (sliderMappings[rangeId].carrierId === carrier.id) delete sliderMappings[rangeId];
+          });
+          delete waveCarriers[carrier.id];
+          if (activeCarrierId === carrier.id) {
+            activeCarrierId = Object.keys(waveCarriers)[0] || null;
+          }
+          renderEffectsList();
+          refreshEffectRowMarkers();
+          syncEffectsMasterCheckbox();
+          syncAnimationLoop();
+        });
+
+        head.append(enCheck, nameInput, useBtn, removeBtn);
+        card.appendChild(head);
+
+        const waveRow = document.createElement('div');
+        waveRow.className = 'sp-row';
+        const waveLbl = document.createElement('label');
+        waveLbl.textContent = 'Wave';
+        const waveSel = document.createElement('select');
+        WAVEFORMS.forEach(w => {
+          const opt = document.createElement('option');
+          opt.value = w.id;
+          opt.textContent = w.label;
+          if (w.id === carrier.waveform) opt.selected = true;
+          waveSel.appendChild(opt);
+        });
+        waveSel.addEventListener('change', () => { carrier.waveform = waveSel.value; });
+        waveRow.append(waveLbl, waveSel);
+        card.appendChild(waveRow);
+
+        bindParamRow(card, 'Period', carrier.period, 0.25, 60, 0.25, 2, v => { carrier.period = v; });
+        bindParamRow(card, 'Offset', carrier.offset, 0, 1, 0.01, 2, v => { carrier.offset = v; });
+        bindParamRow(card, 'Amp', carrier.amplitude, 0, 1, 0.01, 2, v => { carrier.amplitude = v; });
+
+        const mappingsEl = document.createElement('div');
+        mappingsEl.className = 'sp-carrier-mappings';
+        Object.values(sliderMappings)
+          .filter(m => m.carrierId === carrier.id)
+          .forEach(m => renderMappingItem(m, mappingsEl));
+        card.appendChild(mappingsEl);
+
+        list.appendChild(card);
+      });
+    }
+
+    function ensureActiveCarrier() {
+      if (activeCarrierId && waveCarriers[activeCarrierId]) return activeCarrierId;
+      const carrier = defaultCarrier();
+      waveCarriers[carrier.id] = carrier;
+      activeCarrierId = carrier.id;
+      return carrier.id;
+    }
+
+    function addSliderMapping(rangeId) {
+      if (!SLIDER_REGISTRY[rangeId] || sliderMappings[rangeId]) return;
+      const carrierId = ensureActiveCarrier();
+      const mapping = defaultMapping(rangeId, carrierId);
+      if (!mapping) return;
+      sliderMappings[rangeId] = mapping;
+      renderEffectsList();
+      refreshEffectRowMarkers();
+      syncEffectsMasterCheckbox();
+      if (!el('s-effects-master').checked) {
+        el('s-effects-master').checked = true;
+        effectsEpoch = performance.now();
+      }
+      syncAnimationLoop();
+    }
+
+    function addCarrier() {
+      const carrier = defaultCarrier();
+      waveCarriers[carrier.id] = carrier;
+      activeCarrierId = carrier.id;
+      renderEffectsList();
+    }
+
+    function syncEffectsMasterCheckbox() {
+      if (!Object.values(sliderMappings).some(m => m.enabled)) {
+        el('s-effects-master').checked = false;
+      }
+    }
+
+    function setAddEffectMode(on) {
+      addEffectMode = on;
+      const btn = el('s-add-effect-mode');
+      const hint = el('s-effect-hint');
+      btn.classList.toggle('active', on);
+      btn.textContent = on ? 'On — click a slider' : 'Off';
+      settingsPanel.classList.toggle('add-effect-mode', on);
+      hint.classList.toggle('active', on);
+      if (on && !Object.keys(waveCarriers).length) ensureActiveCarrier();
+      hint.textContent = on
+        ? 'Click a slider row to assign it to the active carrier.'
+        : 'Add a carrier wave, select it, turn on Add Effect, then click sliders to assign.';
+      if (on) renderEffectsList();
+    }
+
+    el('s-carrier-add').addEventListener('click', addCarrier);
+    el('s-carrier-active').addEventListener('change', () => {
+      activeCarrierId = el('s-carrier-active').value;
+      renderEffectsList();
+    });
+    el('s-add-effect-mode').addEventListener('click', () => setAddEffectMode(!addEffectMode));
+
+    el('s-effects-master').addEventListener('change', () => {
+      if (el('s-effects-master').checked) effectsEpoch = performance.now();
+      syncAnimationLoop();
+    });
+
+    settingsPanel.addEventListener('click', e => {
+      if (!addEffectMode) return;
+      if (e.target.closest('#slider-effects-section, .sp-carrier-card, .sp-mapping-item')) return;
+      if (e.target.closest('input, button, select')) return;
+      const row = e.target.closest('.sp-slider-row');
+      if (!row) return;
+      const range = row.querySelector('input[type="range"]');
+      if (!range) return;
+      e.preventDefault();
+      addSliderMapping(range.id);
+    });
+
     el('s-color-mode').addEventListener('change', () => {
       style.colorMode = el('s-color-mode').value;
       updateColorModeUI();
@@ -1937,7 +2694,11 @@
     let openPresetId = null;
 
     function openPresets()  { presetsPanel.classList.add('open');    presetsOverlay.classList.add('open'); }
-    function closePresets() { presetsPanel.classList.remove('open'); presetsOverlay.classList.remove('open'); }
+    function closePresets() {
+      endPresetPreview();
+      presetsPanel.classList.remove('open');
+      presetsOverlay.classList.remove('open');
+    }
 
     el('presetsBtn').addEventListener('click', () => {
       closeSettings();
@@ -1955,6 +2716,8 @@
       return {
         style: defaultStyleSnapshot(),
         snapMultOnPause: el('s-snap-pause').checked,
+        sliderEffects: cloneEffectsState(),
+        effectsMaster: el('s-effects-master').checked,
         mult,
         multStep: multStep.value,
         multLo: multLo.value,
@@ -1966,16 +2729,57 @@
       };
     }
 
+    const THUMB_DISPLAY_PX = 128;
+
+    function captureConfigSnapshot(cfg) {
+      const prev = { ...style };
+      Object.assign(style, normalizeStyleObject(cfg.style));
+
+      const renderSize = canvas.width > 0 ? canvas.width : 512;
+      const off = document.createElement('canvas');
+      off.width = renderSize;
+      off.height = renderSize;
+      drawCircle(off.getContext('2d'), off, Number(cfg.mult), Math.round(Number(cfg.points)));
+
+      const thumb = document.createElement('canvas');
+      thumb.width = THUMB_DISPLAY_PX;
+      thumb.height = THUMB_DISPLAY_PX;
+      const tctx = thumb.getContext('2d');
+      tctx.imageSmoothingEnabled = true;
+      tctx.imageSmoothingQuality = 'high';
+      tctx.drawImage(off, 0, 0, THUMB_DISPLAY_PX, THUMB_DISPLAY_PX);
+
+      const dataUrl = thumb.toDataURL('image/png');
+      Object.assign(style, prev);
+      draw();
+      return dataUrl;
+    }
+
     function normalizeStyleObject(s) {
       const base = defaultStyleSnapshot();
       if (!s || typeof s !== 'object') return base;
       return { ...base, ...s };
     }
 
+    function endPresetPreview() {
+      if (!presetPreview) return;
+      presetPreview = null;
+      draw();
+    }
+
+    function beginPresetPreview(cfg) {
+      presetPreview = cfg;
+      draw();
+    }
+
     function applyConfig(cfg) {
+      endPresetPreview();
       Object.assign(style, normalizeStyleObject(cfg.style));
       syncStyleInputsFromObject();
       el('s-snap-pause').checked = !!cfg.snapMultOnPause;
+      restoreSliderEffects(cfg.sliderEffects);
+      el('s-effects-master').checked = !!cfg.effectsMaster;
+      syncAnimationLoop();
 
       multStep.value   = cfg.multStep ?? multStep.value;
       multLo.value     = cfg.multLo ?? multLo.value;
@@ -2013,7 +2817,7 @@
       return `mult ${cfg.mult} · ${cfg.points} pts · ${s.colorMode} · ${s.circleShade}`;
     }
 
-    function createPreset(name, config) {
+    function createPreset(name, config, thumbnail) {
       const now = Date.now();
       return {
         id: 'p_' + now + '_' + Math.random().toString(36).slice(2, 8),
@@ -2021,13 +2825,15 @@
         createdAt: now,
         updatedAt: now,
         config,
+        thumbnail: thumbnail || null,
       };
     }
 
     function addPreset(name) {
       const trimmed = name.trim();
       if (!trimmed) return false;
-      presets.unshift(createPreset(trimmed, captureCurrentConfig()));
+      const config = captureCurrentConfig();
+      presets.unshift(createPreset(trimmed, config, captureConfigSnapshot(config)));
       savePresetsToStorage();
       renderPresetsList();
       return true;
@@ -2080,6 +2886,7 @@
       if (!preset) return;
       preset.name = edits.name;
       preset.config = edits.config;
+      preset.thumbnail = captureConfigSnapshot(edits.config);
       preset.updatedAt = Date.now();
       savePresetsToStorage();
       renderPresetsList();
@@ -2089,7 +2896,9 @@
     function overwritePreset(id) {
       const preset = presets.find(p => p.id === id);
       if (!preset) return;
-      preset.config = captureCurrentConfig();
+      const config = captureCurrentConfig();
+      preset.config = config;
+      preset.thumbnail = captureConfigSnapshot(config);
       preset.updatedAt = Date.now();
       savePresetsToStorage();
       renderPresetsList();
@@ -2109,7 +2918,11 @@
 
       const header = document.createElement('div');
       header.className = 'preset-item-header';
+      const thumbHtml = preset.thumbnail
+        ? `<img class="preset-thumb" src="${preset.thumbnail}" alt="" />`
+        : `<div class="preset-thumb placeholder" aria-hidden="true"></div>`;
       header.innerHTML = `
+        ${thumbHtml}
         <input class="preset-name" type="text" value="${escapeAttr(preset.name)}" maxlength="64" />
         <div class="preset-header-btns">
           <button class="preset-mini-btn load" type="button" data-action="load">Load</button>
@@ -2149,6 +2962,9 @@
       item.appendChild(summary);
       item.appendChild(details);
 
+      item.addEventListener('mouseenter', () => beginPresetPreview(preset.config));
+      item.addEventListener('mouseleave', endPresetPreview);
+
       header.querySelector('[data-action="load"]').addEventListener('click', () => {
         applyConfig(preset.config);
         closePresets();
@@ -2183,6 +2999,7 @@
     }
 
     function renderPresetsList() {
+      endPresetPreview();
       presetsList.innerHTML = '';
       if (!presets.length) {
         const empty = document.createElement('div');
