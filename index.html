@@ -128,7 +128,67 @@
       width: 100%;
     }
 
-    #c { display: block; border-radius: 50%; }
+    #c { display: block; border-radius: 50%; cursor: default; touch-action: none; }
+    body.multi-mode #c { border-radius: 8px; cursor: crosshair; }
+    body.fullscreen #c,
+    body.multi-mode #c { border-radius: 0; }
+
+    .circle-bar {
+      display: none;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+    body.multi-mode .circle-bar { display: flex; }
+    body.multi-mode .points-play-btn,
+    body.multi-mode .points-step-input,
+    body.multi-mode .points-bound { display: none; }
+    body.multi-mode .points-row { grid-template-columns: 20px 20px 58px 1fr 56px; }
+
+    .circle-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      flex: 1;
+      min-width: 0;
+    }
+    .circle-tab {
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 5px;
+      color: #888;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .circle-tab:hover { border-color: #555; color: #ccc; }
+    .circle-tab.active {
+      border-color: #a78bfa;
+      color: #c4b5fd;
+      background: rgba(167, 139, 250, 0.1);
+    }
+    .circle-bar-btn {
+      background: #111;
+      border: 1px solid #a78bfa;
+      border-radius: 5px;
+      color: #a78bfa;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .circle-bar-btn:hover { background: #1e1530; }
+    .circle-bar-btn.danger { border-color: #7f4444; color: #e88; }
+    .circle-bar-btn.danger:hover { background: #2a1515; }
+    .topbar-btn.multi-active {
+      background: #2a1f4a;
+      border-color: #c4b5fd;
+      color: #c4b5fd;
+    }
 
     .controls {
       flex-shrink: 0;
@@ -1235,6 +1295,12 @@
   <div class="topbar">
     <div class="topbar-left">
       <button class="topbar-btn" id="settingsBtn" title="Settings">&#9881;</button>
+      <button class="topbar-btn" id="multiModeBtn" title="Multi-circle mode (M)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="8" cy="8" r="5"/>
+          <circle cx="16" cy="16" r="5"/>
+        </svg>
+      </button>
       <button class="topbar-btn" id="presetsBtn" title="Saved configurations">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
@@ -1292,6 +1358,12 @@
 
   <div class="controls">
 
+    <div class="circle-bar" id="circleBar">
+      <div class="circle-tabs" id="circleTabs"></div>
+      <button class="circle-bar-btn" id="addCircleBtn" type="button" title="Add circle">+ Circle</button>
+      <button class="circle-bar-btn danger" id="removeCircleBtn" type="button" title="Remove selected circle">Remove</button>
+    </div>
+
     <!-- Multiplier row: [dec] [inc] [row-play] [step] [label] [lo] [slider] [hi] [value] -->
     <div class="row">
       <button class="step-btn" data-target="mult"   data-dir="-1" title="Decrement">&#8722;</button>
@@ -1306,15 +1378,15 @@
     </div>
 
     <!-- Points row -->
-    <div class="row">
+    <div class="row points-row">
       <button class="step-btn" data-target="points" data-dir="-1" title="Decrement">&#8722;</button>
       <button class="step-btn" data-target="points" data-dir="1"  title="Increment">&#43;</button>
-      <button class="row-play" id="pointsPlayBtn" title="Animate points">&#9654;</button>
-      <input class="step" id="pointsStep" type="number" value="5" step="any" title="Step size for arrows and animation speed (units/sec)" data-tip="Points — step size and animation speed" />
+      <button class="row-play points-play-btn" id="pointsPlayBtn" title="Animate points">&#9654;</button>
+      <input class="step points-step-input" id="pointsStep" type="number" value="5" step="any" title="Step size for arrows and animation speed (units/sec)" data-tip="Points — step size and animation speed" />
       <span class="lbl">Points</span>
-      <input class="bound" id="pointsLo" type="number" value="0"   step="1" title="Lower bound of the Points slider" data-tip="Points — slider lower bound" />
+      <input class="bound points-bound" id="pointsLo" type="number" value="0"   step="1" title="Lower bound of the Points slider" data-tip="Points — slider lower bound" />
       <input id="pointsSlider" type="range" min="0" max="200" value="200" step="5" />
-      <input class="bound" id="pointsHi" type="number" value="200" step="1" title="Upper bound of the Points slider" data-tip="Points — slider upper bound" />
+      <input class="bound points-bound" id="pointsHi" type="number" value="200" step="1" title="Upper bound of the Points slider" data-tip="Points — slider upper bound" />
       <input id="pointsNum" type="number" value="200" step="1" data-tip="Points — current value" />
     </div>
 
@@ -1366,6 +1438,8 @@
         <div class="sp-row shade-solid-row">
           <label for="s-circle-bg-color">Circle</label>
           <input type="color" id="s-circle-bg-color" value="#0d0d0d" />
+          <input type="range" id="s-circle-bg-opacity" min="0" max="1" step="0.01" value="1" title="Circle opacity" />
+          <input type="number" class="sp-val" id="s-circle-bg-opacity-val" value="1" min="0" max="1" step="0.01" />
         </div>
         <div class="sp-row">
           <label for="s-circle-shade">Shading</label>
@@ -1381,6 +1455,8 @@
         <div class="sp-row shade-common-row">
           <label for="s-circle-bg-color-shaded">Base</label>
           <input type="color" id="s-circle-bg-color-shaded" value="#0d0d0d" />
+          <input type="range" id="s-circle-bg-base-opacity" min="0" max="1" step="0.01" value="1" title="Base opacity" />
+          <input type="number" class="sp-val" id="s-circle-bg-base-opacity-val" value="1" min="0" max="1" step="0.01" />
         </div>
         <div class="sp-row shade-common-row">
           <label for="s-shade-amount">Effect</label>
@@ -1400,10 +1476,14 @@
         <div class="sp-row shade-common-row">
           <label for="s-circle-bg-outer">Outer</label>
           <input type="color" id="s-circle-bg-outer" value="#2a2545" />
+          <input type="range" id="s-circle-bg-outer-opacity" min="0" max="1" step="0.01" value="1" title="Outer opacity" />
+          <input type="number" class="sp-val" id="s-circle-bg-outer-opacity-val" value="1" min="0" max="1" step="0.01" />
         </div>
         <div class="sp-row shade-common-row">
           <label for="s-circle-bg-inner">Inner</label>
           <input type="color" id="s-circle-bg-inner" value="#050508" />
+          <input type="range" id="s-circle-bg-inner-opacity" min="0" max="1" step="0.01" value="1" title="Inner opacity" />
+          <input type="number" class="sp-val" id="s-circle-bg-inner-opacity-val" value="1" min="0" max="1" step="0.01" />
         </div>
         <div class="sp-row shade-spot-row">
           <label for="s-spot-hot-color">Hot color</label>
@@ -1641,11 +1721,273 @@
     const topbarMultPlayBtn   = el('topbarMultPlayBtn');
     const topbarRestartBtn    = el('topbarRestartBtn');
     const topbarFullscreenBtn = el('topbarFullscreenBtn');
+    const multiModeBtn        = el('multiModeBtn');
+    const circleTabs          = el('circleTabs');
+    const addCircleBtn        = el('addCircleBtn');
+    const removeCircleBtn     = el('removeCircleBtn');
 
     let mult = 2, points = 200;
     let multAnim = 2, pointsAnim = 200;
     let multPlaying = false, pointsPlaying = false;
     let lastTime = null, rafId = null;
+
+    let multiMode = false;
+    let selectedCircleId = null;
+    let circles = [];
+    let canvasDrag = null;
+
+    function newCircleId() {
+      return 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+    }
+
+    function createCircle(overrides = {}) {
+      const pts = overrides.points ?? 200;
+      return {
+        id: newCircleId(),
+        x: 0.5,
+        y: 0.5,
+        size: 0.44,
+        mult: 2,
+        multAnim: 2,
+        multLo: 0,
+        multHi: pts,
+        multStep: 1,
+        points: pts,
+        ...overrides,
+      };
+    }
+
+    function circleFromGlobals() {
+      return createCircle({
+        x: 0.5,
+        y: 0.5,
+        size: 0.44,
+        mult,
+        multAnim: mult,
+        multLo: num(multLo),
+        multHi: num(multHi),
+        multStep: parseFloat(multStep.value) || 1,
+        points,
+      });
+    }
+
+    function getSelectedCircle() {
+      return circles.find(c => c.id === selectedCircleId) || circles[0] || null;
+    }
+
+    function selectCircle(id) {
+      if (!circles.some(c => c.id === id)) return;
+      if (multiMode) pushControlsToCircle();
+      selectedCircleId = id;
+      if (multiMode) pullControlsFromCircle();
+      renderCircleTabs();
+      draw();
+    }
+
+    function deselectCircle() {
+      if (!selectedCircleId) return;
+      if (multiMode) pushControlsToCircle();
+      selectedCircleId = null;
+      renderCircleTabs();
+      draw();
+    }
+
+    function renderCircleTabs() {
+      circleTabs.innerHTML = '';
+      circles.forEach((c, i) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'circle-tab' + (c.id === selectedCircleId ? ' active' : '');
+        btn.textContent = `Circle ${i + 1}`;
+        btn.title = `Multiplier ${c.mult}, ${c.points} points`;
+        btn.addEventListener('click', () => selectCircle(c.id));
+        circleTabs.appendChild(btn);
+      });
+    }
+
+    function pushControlsToCircle() {
+      const c = getSelectedCircle();
+      if (!c) return;
+      c.multLo = num(multLo);
+      c.multHi = num(multHi);
+      c.multStep = parseFloat(multStep.value) || 1;
+      c.mult = mult;
+      c.multAnim = mult;
+      c.points = points;
+    }
+
+    function pullControlsFromCircle() {
+      const c = getSelectedCircle();
+      if (!c) return;
+      multStep.value = c.multStep;
+      multLo.value = c.multLo;
+      multHi.value = c.multHi;
+      pointsNum.value = c.points;
+      pointsSlider.value = c.points;
+      pointsSlider.min = 0;
+      pointsSlider.max = Math.max(200, c.points, c.multHi);
+      multSlider.min = c.multLo;
+      multSlider.max = c.multHi;
+      applyStep(multSlider, multStep);
+      syncMult(c.mult, false);
+      syncPoints(c.points, false);
+    }
+
+    function addCircle() {
+      if (!multiMode) return;
+      pushControlsToCircle();
+      const base = getSelectedCircle();
+      const offset = (circles.length % 4) * 0.12;
+      const nc = createCircle({
+        x: clamp((base?.x ?? 0.5) + offset - 0.06, 0.12, 0.88),
+        y: clamp((base?.y ?? 0.5) + offset - 0.06, 0.12, 0.88),
+        size: Math.max(0.12, (base?.size ?? 0.44) * 0.75),
+        mult: base?.mult ?? 2,
+        multAnim: base?.multAnim ?? 2,
+        multLo: base?.multLo ?? 0,
+        multHi: base?.multHi ?? 200,
+        multStep: base?.multStep ?? 1,
+        points: base?.points ?? 200,
+      });
+      circles.push(nc);
+      selectCircle(nc.id);
+    }
+
+    function removeCircle() {
+      if (!multiMode || circles.length <= 1) return;
+      const idx = circles.findIndex(c => c.id === selectedCircleId);
+      if (idx < 0) return;
+      circles.splice(idx, 1);
+      selectCircle(circles[Math.min(idx, circles.length - 1)].id);
+    }
+
+    function setMultiMode(on) {
+      if (on === multiMode) return;
+      if (on) {
+        if (!circles.length) circles = [circleFromGlobals()];
+        selectedCircleId = circles[0].id;
+        pullControlsFromCircle();
+      } else {
+        pushControlsToCircle();
+        const c = getSelectedCircle();
+        if (c) {
+          mult = c.mult;
+          multAnim = c.multAnim;
+          points = c.points;
+          multLo.value = c.multLo;
+          multHi.value = c.multHi;
+          multStep.value = c.multStep;
+          multSlider.min = c.multLo;
+          multSlider.max = c.multHi;
+          applyStep(multSlider, multStep);
+          syncMult(c.mult, false);
+          syncPoints(c.points, false);
+        }
+        circles = [];
+        selectedCircleId = null;
+      }
+      multiMode = on;
+      document.body.classList.toggle('multi-mode', on);
+      multiModeBtn.classList.toggle('multi-active', on);
+      multLo.title = on ? 'Start multiplier' : 'Lower bound of the Multiplier slider';
+      multHi.title = on ? 'End multiplier' : 'Upper bound of the Multiplier slider';
+      multStep.title = on ? 'Multiplier increment / animation speed' : 'Step size for arrows and animation speed (units/sec)';
+      renderCircleTabs();
+      sizeCanvas();
+      draw();
+    }
+
+    function toggleMultiMode() {
+      setMultiMode(!multiMode);
+    }
+
+    function cloneCircles(arr) {
+      return (arr || []).map(c => ({ ...c }));
+    }
+
+    function serializeCircles() {
+      return circles.map(c => ({
+        id: c.id,
+        x: c.x,
+        y: c.y,
+        size: c.size,
+        mult: c.mult,
+        multAnim: c.multAnim,
+        multLo: c.multLo,
+        multHi: c.multHi,
+        multStep: c.multStep,
+        points: c.points,
+      }));
+    }
+
+    function normalizeCirclesFromConfig(cfg) {
+      if (cfg.circles && cfg.circles.length) {
+        return cfg.circles.map(c => createCircle({
+          id: c.id || newCircleId(),
+          x: c.x ?? 0.5,
+          y: c.y ?? 0.5,
+          size: c.size ?? 0.44,
+          mult: c.mult ?? 2,
+          multAnim: c.multAnim ?? c.mult ?? 2,
+          multLo: c.multLo ?? 0,
+          multHi: c.multHi ?? c.points ?? 200,
+          multStep: parseFloat(c.multStep) || 1,
+          points: Math.round(c.points ?? 200),
+        }));
+      }
+      return [createCircle({
+        x: 0.5,
+        y: 0.5,
+        size: 0.44,
+        mult: cfg.mult ?? 2,
+        multAnim: cfg.mult ?? 2,
+        multLo: cfg.multLo ?? 0,
+        multHi: cfg.multHi ?? 200,
+        multStep: parseFloat(cfg.multStep) || 1,
+        points: Math.round(cfg.points ?? 200),
+      })];
+    }
+
+    function circleLayout(circle, w, h) {
+      w = w ?? canvas.width;
+      h = h ?? canvas.height;
+      const base = Math.min(w, h);
+      return {
+        cx: circle.x * w,
+        cy: circle.y * h,
+        r: circle.size * base,
+      };
+    }
+
+    function hitTestCircles(px, py) {
+      const w = canvas.width, h = canvas.height;
+      for (let i = circles.length - 1; i >= 0; i--) {
+        const c = circles[i];
+        const { cx, cy, r } = circleLayout(c, w, h);
+        const dotR = c.points >= 2 ? Math.max(1.2, 4 - c.points / 80) * style.dotScale : 0;
+        let bgR = r;
+        if (style.showRing) bgR += style.ringWidth / 2;
+        if (c.points >= 2) bgR = Math.max(bgR, r + dotR);
+        const dx = px - cx, dy = py - cy;
+        if (dx * dx + dy * dy <= bgR * bgR) return { circle: c, cx, cy, r: bgR };
+      }
+      return null;
+    }
+
+    function getResizeHandlePos(cx, cy, r) {
+      const a = Math.PI / 4;
+      return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+    }
+
+    function canvasPointerPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY,
+      };
+    }
 
     function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
     function num(el) { const v = parseFloat(el.value); return isNaN(v) ? 0 : v; }
@@ -1658,6 +2000,16 @@
       multAnim = mult;
       multSlider.value = mult;
       multNum.value    = parseFloat(mult.toFixed(3));
+      if (multiMode) {
+        const c = getSelectedCircle();
+        if (c) {
+          c.mult = mult;
+          c.multAnim = mult;
+          c.multLo = lo;
+          c.multHi = hi;
+          c.multStep = parseFloat(multStep.value) || 1;
+        }
+      }
       if (redraw) draw();
     }
 
@@ -1665,16 +2017,29 @@
       const lo = num(pointsLo);
       const requested = isNaN(parseFloat(v)) ? lo : Math.round(parseFloat(v));
       points = Math.max(lo, requested);
-      if (points > num(pointsHi)) {
+      if (!multiMode && points > num(pointsHi)) {
         pointsHi.value   = points;
         pointsSlider.max = points;
       }
       pointsAnim = points;
       pointsSlider.value = points;
       pointsNum.value    = points;
-      multHi.value       = points;
-      multSlider.max     = points;
-      if (mult > points) syncMult(points, false);
+      if (!multiMode) {
+        multHi.value       = points;
+        multSlider.max     = points;
+        if (mult > points) syncMult(points, false);
+      } else {
+        const c = getSelectedCircle();
+        if (c) {
+          c.points = points;
+          if (c.multHi < points) {
+            c.multHi = points;
+            multHi.value = points;
+            multSlider.max = points;
+          }
+        }
+        multSlider.max = Math.max(num(multHi), points);
+      }
       if (redraw) draw();
     }
 
@@ -1693,10 +2058,20 @@
 
     // ── bound input listeners ─────────────────────────────────────
 
-    multLo.addEventListener('change',   () => applyBounds(multSlider,   multLo,   multHi,   syncMult));
-    multHi.addEventListener('change',   () => applyBounds(multSlider,   multLo,   multHi,   syncMult));
-    pointsLo.addEventListener('change', () => applyBounds(pointsSlider, pointsLo, pointsHi, syncPoints));
-    pointsHi.addEventListener('change', () => applyBounds(pointsSlider, pointsLo, pointsHi, syncPoints));
+    multLo.addEventListener('change',   () => {
+      applyBounds(multSlider, multLo, multHi, syncMult);
+      if (multiMode) pushControlsToCircle();
+    });
+    multHi.addEventListener('change',   () => {
+      applyBounds(multSlider, multLo, multHi, syncMult);
+      if (multiMode) pushControlsToCircle();
+    });
+    pointsLo.addEventListener('change', () => {
+      if (!multiMode) applyBounds(pointsSlider, pointsLo, pointsHi, syncPoints);
+    });
+    pointsHi.addEventListener('change', () => {
+      if (!multiMode) applyBounds(pointsSlider, pointsLo, pointsHi, syncPoints);
+    });
 
     // ── arrow button listeners ────────────────────────────────────
 
@@ -1747,19 +2122,42 @@
       syncMultPlayUI();
       syncAnimationLoop();
       if (!multPlaying && el('s-snap-pause').checked) {
-        const step = parseFloat(multStep.value) || 1;
-        const decimals = (step.toString().split('.')[1] || '').length;
-        syncMult(parseFloat((Math.round(mult / step) * step).toFixed(decimals)));
+        if (multiMode) {
+          for (const c of circles) {
+            const step = c.multStep || 1;
+            const decimals = (step.toString().split('.')[1] || '').length;
+            c.mult = parseFloat((Math.round(c.mult / step) * step).toFixed(decimals));
+            c.multAnim = c.mult;
+          }
+          pullControlsFromCircle();
+        } else {
+          const step = parseFloat(multStep.value) || 1;
+          const decimals = (step.toString().split('.')[1] || '').length;
+          syncMult(parseFloat((Math.round(mult / step) * step).toFixed(decimals)));
+        }
       }
+      draw();
     }
 
     function restartMultiplier() {
       if (multPlaying) toggleMultPlay();
-      if (num(multLo) > 0) {
+      if (multiMode) {
+        for (const c of circles) {
+          if (c.multLo > 0) c.multLo = 0;
+          c.mult = 0;
+          c.multAnim = 0;
+        }
         multLo.value = 0;
         multSlider.min = 0;
+        pullControlsFromCircle();
+      } else {
+        if (num(multLo) > 0) {
+          multLo.value = 0;
+          multSlider.min = 0;
+        }
+        syncMult(0);
       }
-      syncMult(0);
+      draw();
     }
 
     let fullscreen = false;
@@ -1847,15 +2245,32 @@
       lastTime = ts;
 
       if (multPlaying) {
-        const lo = num(multLo), hi = num(multHi);
-        const spd = parseFloat(multStep.value) || 0.1;
-        multAnim = wrapAnim(multAnim + spd * dt, lo, hi);
-        mult = multAnim;
-        multSlider.value = mult;
-        multNum.value    = parseFloat(mult.toFixed(3));
+        if (multiMode) {
+          let updateUi = false;
+          for (const c of circles) {
+            const lo = c.multLo, hi = c.multHi;
+            const spd = c.multStep || 0.1;
+            c.multAnim = wrapAnim(c.multAnim + spd * dt, lo, hi);
+            c.mult = c.multAnim;
+            if (c.id === selectedCircleId) updateUi = true;
+          }
+          if (updateUi) {
+            mult = getSelectedCircle()?.mult ?? mult;
+            multAnim = mult;
+            multSlider.value = mult;
+            multNum.value = parseFloat(mult.toFixed(3));
+          }
+        } else {
+          const lo = num(multLo), hi = num(multHi);
+          const spd = parseFloat(multStep.value) || 0.1;
+          multAnim = wrapAnim(multAnim + spd * dt, lo, hi);
+          mult = multAnim;
+          multSlider.value = mult;
+          multNum.value    = parseFloat(mult.toFixed(3));
+        }
       }
 
-      if (pointsPlaying) {
+      if (pointsPlaying && !multiMode) {
         const lo = num(pointsLo), hi = num(pointsHi);
         const spd = parseFloat(pointsStep.value) || 5;
         pointsAnim = wrapAnim(pointsAnim + spd * dt, lo, hi);
@@ -1881,12 +2296,19 @@
     function sizeCanvas() {
       const wrap = el('canvas-wrap');
       const rect = wrap.getBoundingClientRect();
-      const px   = Math.floor(Math.min(rect.width, rect.height) * devicePixelRatio);
-      canvas.width  = px;
-      canvas.height = px;
-      const css = Math.floor(px / devicePixelRatio) + 'px';
-      canvas.style.width  = css;
-      canvas.style.height = css;
+      const dpr  = devicePixelRatio;
+      let w, h;
+      if (multiMode || fullscreen) {
+        w = Math.max(1, Math.floor(rect.width * dpr));
+        h = Math.max(1, Math.floor(rect.height * dpr));
+      } else {
+        const px = Math.floor(Math.min(rect.width, rect.height) * dpr);
+        w = h = px;
+      }
+      canvas.width  = w;
+      canvas.height = h;
+      canvas.style.width  = Math.floor(w / dpr) + 'px';
+      canvas.style.height = Math.floor(h / dpr) + 'px';
     }
 
     // ── Style config ──────────────────────────────────────────────
@@ -1894,9 +2316,12 @@
     const style = {
       pageBgColor:  '#0d0d0d',
       circleBgColor:'#0d0d0d',
+      circleBgAlpha: 1,
       circleShade:  'rim-light',
       circleBgOuter:'#2a2545',
+      circleBgOuterAlpha: 1,
       circleBgInner:'#050508',
+      circleBgInnerAlpha: 1,
       shadeAmount:  1,
       shadeContrast:0.85,
       shadeFalloff: 0.5,
@@ -1925,21 +2350,38 @@
       solidColor:   '#a78bfa',
     };
 
+    function parseHex(hex) {
+      if (!hex || hex[0] !== '#') return { r: 0, g: 0, b: 0 };
+      const h = hex.length >= 7 ? hex.slice(1, 7) : hex.slice(1).padEnd(6, '0');
+      return {
+        r: parseInt(h.slice(0, 2), 16) || 0,
+        g: parseInt(h.slice(2, 4), 16) || 0,
+        b: parseInt(h.slice(4, 6), 16) || 0,
+      };
+    }
+
     function hexToRgba(hex, alpha) {
-      const r = parseInt(hex.slice(1, 3), 16);
-      const g = parseInt(hex.slice(3, 5), 16);
-      const b = parseInt(hex.slice(5, 7), 16);
-      return `rgba(${r},${g},${b},${alpha})`;
+      const { r, g, b } = parseHex(hex);
+      return `rgba(${r},${g},${b},${Math.max(0, Math.min(1, alpha ?? 1))})`;
     }
 
     function mixHex(a, b, t) {
       t = Math.max(0, Math.min(1, t));
-      const ar = parseInt(a.slice(1, 3), 16), ag = parseInt(a.slice(3, 5), 16), ab = parseInt(a.slice(5, 7), 16);
-      const br = parseInt(b.slice(1, 3), 16), bg = parseInt(b.slice(3, 5), 16), bb = parseInt(b.slice(5, 7), 16);
-      const r = Math.round(ar + (br - ar) * t);
-      const g = Math.round(ag + (bg - ag) * t);
-      const bl = Math.round(ab + (bb - ab) * t);
+      const ar = parseHex(a), br = parseHex(b);
+      const r = Math.round(ar.r + (br.r - ar.r) * t);
+      const g = Math.round(ar.g + (br.g - ar.g) * t);
+      const bl = Math.round(ar.b + (br.b - ar.b) * t);
       return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${bl.toString(16).padStart(2, '0')}`;
+    }
+
+    function mixRgba(hexA, alphaA, hexB, alphaB, t) {
+      t = Math.max(0, Math.min(1, t));
+      const a = parseHex(hexA), b = parseHex(hexB);
+      const r = Math.round(a.r + (b.r - a.r) * t);
+      const g = Math.round(a.g + (b.g - a.g) * t);
+      const bl = Math.round(a.b + (b.b - a.b) * t);
+      const al = (alphaA ?? 1) + ((alphaB ?? 1) - (alphaA ?? 1)) * t;
+      return `rgba(${r},${g},${bl},${Math.max(0, Math.min(1, al))})`;
     }
 
     function fillCircleBackground(targetCtx, cx, cy, bgR) {
@@ -1948,8 +2390,9 @@
 
       const mode = style.circleShade;
       const mid  = style.circleBgColor;
+      const midA = style.circleBgAlpha ?? 1;
       if (mode === 'none' || style.shadeAmount <= 0) {
-        targetCtx.fillStyle = mid;
+        targetCtx.fillStyle = hexToRgba(mid, midA);
         targetCtx.fill();
         return;
       }
@@ -1958,31 +2401,39 @@
       const c     = style.shadeContrast;
       const f     = style.shadeFalloff;
       const outer = style.circleBgOuter;
+      const outerA = style.circleBgOuterAlpha ?? 1;
       const inner = style.circleBgInner;
+      const innerA = style.circleBgInnerAlpha ?? 1;
       const innerStop = 0.06 + f * 0.22;
       const midStop   = 0.22 + f * 0.48;
       const outerStop = 0.52 + f * 0.44;
       const grad = targetCtx.createRadialGradient(cx, cy, 0, cx, cy, bgR);
 
-      function tint(color) { return mixHex(mid, color, amt); }
+      function tintColor(colorHex, colorAlpha) {
+        return mixRgba(mid, midA, colorHex, colorAlpha, amt);
+      }
 
       switch (mode) {
-        case 'rim-light':
-          grad.addColorStop(0, tint(mixHex(inner, mid, 1 - c * 0.35)));
-          grad.addColorStop(midStop, tint(mixHex(inner, mid, 1 - c * 0.75)));
-          grad.addColorStop(1, tint(mixHex(outer, mid, c)));
+        case 'rim-light': {
+          const t0 = 1 - c * 0.35, t1 = 1 - c * 0.75;
+          grad.addColorStop(0, tintColor(mixHex(inner, mid, t0), innerA + (midA - innerA) * t0));
+          grad.addColorStop(midStop, tintColor(mixHex(inner, mid, t1), innerA + (midA - innerA) * t1));
+          grad.addColorStop(1, tintColor(mixHex(outer, mid, c), outerA + (midA - outerA) * c));
           break;
-        case 'rim-dark':
-          grad.addColorStop(0, tint(mixHex(outer, mid, c)));
-          grad.addColorStop(midStop, tint(mid));
-          grad.addColorStop(1, tint(mixHex(inner, mid, c)));
+        }
+        case 'rim-dark': {
+          grad.addColorStop(0, tintColor(mixHex(outer, mid, c), outerA + (midA - outerA) * c));
+          grad.addColorStop(midStop, tintColor(mid, midA));
+          grad.addColorStop(1, tintColor(mixHex(inner, mid, c), innerA + (midA - innerA) * c));
           break;
+        }
         case 'spotlight': {
           const spotEdge = 0.04 + style.spotSize * 0.62;
-          grad.addColorStop(0, tint(mixHex(outer, style.spotHotColor, c * style.spotBright)));
-          grad.addColorStop(spotEdge, tint(mixHex(mid, outer, c * 0.3)));
-          grad.addColorStop(outerStop, tint(mid));
-          grad.addColorStop(1, tint(mixHex(inner, mid, c)));
+          const t1 = c * 0.3;
+          grad.addColorStop(0, tintColor(mixHex(outer, style.spotHotColor, c * style.spotBright), outerA));
+          grad.addColorStop(spotEdge, tintColor(mixHex(mid, outer, t1), midA + (outerA - midA) * t1));
+          grad.addColorStop(outerStop, tintColor(mid, midA));
+          grad.addColorStop(1, tintColor(mixHex(inner, mid, c), innerA + (midA - innerA) * c));
           break;
         }
         case 'aurora': {
@@ -1991,23 +2442,25 @@
           const bw  = style.auroraBandWidth;
           const bandLo = Math.max(0.04, bp - bw / 2);
           const bandHi = Math.min(0.98, bp + bw / 2);
-          grad.addColorStop(0, tint(inner));
-          grad.addColorStop(innerStop + 0.12, tint(mixHex(mid, inner, 1 - c * 0.5)));
-          grad.addColorStop(bandLo, tint(mixHex(outer, mid, c * 0.4)));
-          grad.addColorStop(bp, tint(mixHex(outer, acc, c * 0.65)));
-          grad.addColorStop(bandHi, tint(mixHex(outer, acc, c * 0.4)));
-          grad.addColorStop(1, tint(mixHex(outer, acc, c * 0.18)));
+          const t1 = 1 - c * 0.5;
+          grad.addColorStop(0, tintColor(inner, innerA));
+          grad.addColorStop(innerStop + 0.12, tintColor(mixHex(mid, inner, t1), midA + (innerA - midA) * t1));
+          grad.addColorStop(bandLo, tintColor(mixHex(outer, mid, c * 0.4), outerA));
+          grad.addColorStop(bp, tintColor(mixHex(outer, acc, c * 0.65), outerA));
+          grad.addColorStop(bandHi, tintColor(mixHex(outer, acc, c * 0.4), outerA));
+          grad.addColorStop(1, tintColor(mixHex(outer, acc, c * 0.18), outerA));
           break;
         }
         case 'neon': {
           const glow = style.neonGlowColor;
           const gb   = style.neonGlowBright;
           const glowStart = Math.max(0.5, 1 - style.neonGlowWidth);
-          grad.addColorStop(0, tint(inner));
-          grad.addColorStop(midStop, tint(mixHex(inner, mid, c * 0.4)));
-          grad.addColorStop(glowStart, tint(mixHex(mid, glow, c * gb * 0.5)));
-          grad.addColorStop(glowStart + style.neonGlowWidth * 0.4, tint(mixHex(outer, glow, c * gb * 0.75)));
-          grad.addColorStop(1, tint(mixHex(outer, glow, c * gb * 0.5)));
+          const t1 = c * 0.4;
+          grad.addColorStop(0, tintColor(inner, innerA));
+          grad.addColorStop(midStop, tintColor(mixHex(inner, mid, t1), innerA + (midA - innerA) * t1));
+          grad.addColorStop(glowStart, tintColor(mixHex(mid, glow, c * gb * 0.5), midA));
+          grad.addColorStop(glowStart + style.neonGlowWidth * 0.4, tintColor(mixHex(outer, glow, c * gb * 0.75), outerA));
+          grad.addColorStop(1, tintColor(mixHex(outer, glow, c * gb * 0.5), outerA));
           break;
         }
       }
@@ -2018,17 +2471,12 @@
 
     // ── draw ──────────────────────────────────────────────────────
 
-    function drawCircle(targetCtx, targetCanvas, multVal, nPts) {
-      const sz = targetCanvas.width;
-      if (!sz) return;
-      const cx = sz / 2, cy = sz / 2, r = sz * 0.44;
-
+    function drawCircleAt(targetCtx, cx, cy, r, multVal, nPts) {
       const dotR = nPts >= 2 ? Math.max(1.2, 4 - nPts / 80) * style.dotScale : 0;
       let bgR = r;
       if (style.showRing) bgR += style.ringWidth / 2;
       if (nPts >= 2) bgR = Math.max(bgR, r + dotR);
 
-      targetCtx.clearRect(0, 0, sz, sz);
       fillCircleBackground(targetCtx, cx, cy, bgR);
 
       if (style.showRing) {
@@ -2039,7 +2487,7 @@
         targetCtx.stroke();
       }
 
-      if (nPts < 2) return;
+      if (nPts < 2) return bgR;
       if (style.showDots) {
         for (let i = 0; i < nPts; i++) {
           const a = (2 * Math.PI * i) / nPts - Math.PI / 2;
@@ -2070,17 +2518,104 @@
         targetCtx.lineTo(cx + r * Math.cos(a2), cy + r * Math.sin(a2));
         targetCtx.stroke();
       }
+      return bgR;
+    }
+
+    function drawCircle(targetCtx, targetCanvas, multVal, nPts) {
+      const w = targetCanvas.width, h = targetCanvas.height;
+      if (!w || !h) return;
+      targetCtx.clearRect(0, 0, w, h);
+      const base = Math.min(w, h);
+      const cx = w / 2, cy = h / 2, r = base * 0.44;
+      drawCircleAt(targetCtx, cx, cy, r, multVal, nPts);
+    }
+
+    function drawScene(targetCtx, targetCanvas, scene) {
+      const w = targetCanvas.width, h = targetCanvas.height;
+      if (!w || !h) return;
+      targetCtx.clearRect(0, 0, w, h);
+      const useMulti = scene.multiMode && scene.circles && scene.circles.length;
+      if (useMulti) {
+        targetCtx.fillStyle = style.pageBgColor;
+        targetCtx.fillRect(0, 0, w, h);
+        for (const c of scene.circles) {
+          const { cx, cy, r } = circleLayout(c, w, h);
+          drawCircleAt(targetCtx, cx, cy, r, c.mult ?? c.multAnim ?? 0, Math.round(c.points));
+        }
+      } else {
+        drawCircle(targetCtx, targetCanvas, scene.mult ?? 2, Math.round(scene.points ?? 200));
+      }
+    }
+
+    function drawSelectionOverlay() {
+      if (!multiMode || !selectedCircleId) return;
+      const c = getSelectedCircle();
+      if (!c) return;
+      const w = canvas.width, h = canvas.height;
+      const { cx, cy, r } = circleLayout(c, w, h);
+      const dotR = c.points >= 2 ? Math.max(1.2, 4 - c.points / 80) * style.dotScale : 0;
+      let bgR = r;
+      if (style.showRing) bgR += style.ringWidth / 2;
+      if (c.points >= 2) bgR = Math.max(bgR, r + dotR);
+
+      const dpr = devicePixelRatio;
+      ctx.save();
+      ctx.strokeStyle = '#a78bfa';
+      ctx.lineWidth = 2 * dpr;
+      ctx.setLineDash([6 * dpr, 4 * dpr]);
+      ctx.beginPath();
+      ctx.arc(cx, cy, bgR + 4 * dpr, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const handle = getResizeHandlePos(cx, cy, bgR);
+      ctx.fillStyle = '#a78bfa';
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5 * dpr;
+      ctx.beginPath();
+      ctx.arc(handle.x, handle.y, 7 * dpr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
     }
 
     let presetPreview = null;
 
+    function currentScene() {
+      if (multiMode) {
+        return { multiMode: true, circles: cloneCircles(circles) };
+      }
+      return { multiMode: false, mult, points };
+    }
+
     function draw() {
+      const w = canvas.width, h = canvas.height;
+      if (!w || !h) return;
+      ctx.clearRect(0, 0, w, h);
+
       if (presetPreview) {
         const c = presetPreview;
         const prev = { ...style };
         Object.assign(style, normalizeStyleObject(c.style));
-        drawCircle(ctx, canvas, Number(c.mult), Math.round(Number(c.points)));
+        const scene = {
+          multiMode: !!c.multiMode,
+          circles: c.circles,
+          mult: c.mult,
+          points: c.points,
+        };
+        if (c.multiMode && c.circles?.length) {
+          scene.circles = normalizeCirclesFromConfig(c);
+        }
+        drawScene(ctx, canvas, scene);
         Object.assign(style, prev);
+      } else if (multiMode) {
+        ctx.fillStyle = style.pageBgColor;
+        ctx.fillRect(0, 0, w, h);
+        for (const c of circles) {
+          const { cx, cy, r } = circleLayout(c, w, h);
+          drawCircleAt(ctx, cx, cy, r, c.mult, c.points);
+        }
+        drawSelectionOverlay();
       } else {
         drawCircle(ctx, canvas, mult, points);
       }
@@ -2101,7 +2636,10 @@
       const s = parseFloat(stepInput.value);
       if (s > 0) slider.step = s;
     }
-    multStep.addEventListener('change',   () => applyStep(multSlider,   multStep));
+    multStep.addEventListener('change',   () => {
+      applyStep(multSlider, multStep);
+      if (multiMode) pushControlsToCircle();
+    });
     pointsStep.addEventListener('change', () => applyStep(pointsSlider, pointsStep));
     // init
     applyStep(multSlider,   multStep);
@@ -2110,6 +2648,96 @@
 
     sizeCanvas();
     draw();
+
+    // ── Multi-circle canvas interaction ───────────────────────────
+
+    function selectedCircleBounds() {
+      const c = getSelectedCircle();
+      if (!c) return null;
+      const w = canvas.width, h = canvas.height;
+      const { cx, cy, r } = circleLayout(c, w, h);
+      const dotR = c.points >= 2 ? Math.max(1.2, 4 - c.points / 80) * style.dotScale : 0;
+      let bgR = r;
+      if (style.showRing) bgR += style.ringWidth / 2;
+      if (c.points >= 2) bgR = Math.max(bgR, r + dotR);
+      return { c, cx, cy, bgR };
+    }
+
+    function onCanvasPointerDown(e) {
+      if (!multiMode || presetPreview) return;
+      const pos = canvasPointerPos(e);
+      const bounds = selectedCircleBounds();
+      if (bounds) {
+        const handle = getResizeHandlePos(bounds.cx, bounds.cy, bounds.bgR);
+        const hDist = Math.hypot(pos.x - handle.x, pos.y - handle.y);
+        if (hDist <= 12 * devicePixelRatio) {
+          canvasDrag = {
+            type: 'resize',
+            circleId: bounds.c.id,
+            startX: pos.x,
+            startY: pos.y,
+            startSize: bounds.c.size,
+            startDist: Math.hypot(pos.x - bounds.cx, pos.y - bounds.cy) || 1,
+          };
+          canvas.setPointerCapture(e.pointerId);
+          e.preventDefault();
+          return;
+        }
+      }
+      const hit = hitTestCircles(pos.x, pos.y);
+      if (hit) {
+        selectCircle(hit.circle.id);
+        canvasDrag = {
+          type: 'move',
+          circleId: hit.circle.id,
+          startX: pos.x,
+          startY: pos.y,
+          origX: hit.circle.x,
+          origY: hit.circle.y,
+        };
+        canvas.setPointerCapture(e.pointerId);
+        e.preventDefault();
+      } else {
+        deselectCircle();
+      }
+    }
+
+    function onCanvasPointerMove(e) {
+      if (!canvasDrag) return;
+      const pos = canvasPointerPos(e);
+      const c = circles.find(x => x.id === canvasDrag.circleId);
+      if (!c) return;
+      const w = canvas.width, h = canvas.height;
+      const base = Math.min(w, h);
+
+      if (canvasDrag.type === 'move') {
+        const dx = (pos.x - canvasDrag.startX) / w;
+        const dy = (pos.y - canvasDrag.startY) / h;
+        c.x = canvasDrag.origX + dx;
+        c.y = canvasDrag.origY + dy;
+        draw();
+      } else if (canvasDrag.type === 'resize') {
+        const { cx, cy } = circleLayout(c, w, h);
+        const dist = Math.hypot(pos.x - cx, pos.y - cy);
+        c.size = clamp(dist / base, 0.08, 0.48);
+        draw();
+      }
+    }
+
+    function onCanvasPointerUp(e) {
+      if (!canvasDrag) return;
+      canvasDrag = null;
+      try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+    }
+
+    canvas.addEventListener('pointerdown', onCanvasPointerDown);
+    canvas.addEventListener('pointermove', onCanvasPointerMove);
+    canvas.addEventListener('pointerup', onCanvasPointerUp);
+    canvas.addEventListener('pointercancel', onCanvasPointerUp);
+
+    multiModeBtn.addEventListener('click', toggleMultiMode);
+    addCircleBtn.addEventListener('click', addCircle);
+    removeCircleBtn.addEventListener('click', removeCircle);
 
     // ── Focus tooltips ────────────────────────────────────────────
     (function () {
@@ -2247,6 +2875,17 @@
     bindCircleBaseColor('s-circle-bg-color');
     bindCircleBaseColor('s-circle-bg-color-shaded');
 
+    function syncCircleBgAlpha(v) {
+      style.circleBgAlpha = clamp(parseFloat(v), 0, 1);
+      setRangePair('s-circle-bg-opacity', 's-circle-bg-opacity-val', style.circleBgAlpha, 2);
+      setRangePair('s-circle-bg-base-opacity', 's-circle-bg-base-opacity-val', style.circleBgAlpha, 2);
+      redrawAll();
+    }
+    ['s-circle-bg-opacity', 's-circle-bg-base-opacity'].forEach(id => {
+      el(id).addEventListener('input', () => syncCircleBgAlpha(el(id).value));
+      el(id + '-val').addEventListener('change', () => syncCircleBgAlpha(el(id + '-val').value));
+    });
+
     el('s-circle-shade').addEventListener('change', () => {
       style.circleShade = el('s-circle-shade').value;
       updateShadeUI();
@@ -2254,6 +2893,8 @@
     });
     bindColor('s-circle-bg-outer', 'circleBgOuter');
     bindColor('s-circle-bg-inner', 'circleBgInner');
+    bindRange('s-circle-bg-outer-opacity', 's-circle-bg-outer-opacity-val', 'circleBgOuterAlpha', '', 2);
+    bindRange('s-circle-bg-inner-opacity', 's-circle-bg-inner-opacity-val', 'circleBgInnerAlpha', '', 2);
     bindRange('s-shade-amount',       's-shade-amount-val',       'shadeAmount',       '', 2);
     bindRange('s-shade-contrast',     's-shade-contrast-val',     'shadeContrast',     '', 2);
     bindRange('s-shade-falloff',      's-shade-falloff-val',      'shadeFalloff',      '', 2);
@@ -2796,9 +3437,13 @@
       document.body.style.background = style.pageBgColor;
       el('s-circle-bg-color').value = style.circleBgColor;
       el('s-circle-bg-color-shaded').value = style.circleBgColor;
+      setRangePair('s-circle-bg-opacity', 's-circle-bg-opacity-val', style.circleBgAlpha ?? 1, 2);
+      setRangePair('s-circle-bg-base-opacity', 's-circle-bg-base-opacity-val', style.circleBgAlpha ?? 1, 2);
       el('s-circle-shade').value = style.circleShade;
       el('s-circle-bg-outer').value = style.circleBgOuter;
       el('s-circle-bg-inner').value = style.circleBgInner;
+      setRangePair('s-circle-bg-outer-opacity', 's-circle-bg-outer-opacity-val', style.circleBgOuterAlpha ?? 1, 2);
+      setRangePair('s-circle-bg-inner-opacity', 's-circle-bg-inner-opacity-val', style.circleBgInnerAlpha ?? 1, 2);
       setRangePair('s-shade-amount', 's-shade-amount-val', style.shadeAmount, 2);
       setRangePair('s-shade-contrast', 's-shade-contrast-val', style.shadeContrast, 2);
       setRangePair('s-shade-falloff', 's-shade-falloff-val', style.shadeFalloff, 2);
@@ -2859,11 +3504,13 @@
     }
 
     function captureCurrentConfig() {
-      return {
+      if (multiMode) pushControlsToCircle();
+      const cfg = {
         style: defaultStyleSnapshot(),
         snapMultOnPause: el('s-snap-pause').checked,
         sliderEffects: cloneEffectsState(),
         effectsMaster: el('s-effects-master').checked,
+        multiMode,
         mult,
         multStep: multStep.value,
         multLo: multLo.value,
@@ -2873,6 +3520,10 @@
         pointsLo: pointsLo.value,
         pointsHi: pointsHi.value,
       };
+      if (multiMode) {
+        cfg.circles = serializeCircles();
+      }
+      return cfg;
     }
 
     const THUMB_DISPLAY_PX = 128;
@@ -2885,7 +3536,16 @@
       const off = document.createElement('canvas');
       off.width = renderSize;
       off.height = renderSize;
-      drawCircle(off.getContext('2d'), off, Number(cfg.mult), Math.round(Number(cfg.points)));
+      const scene = {
+        multiMode: !!cfg.multiMode,
+        circles: cfg.circles,
+        mult: cfg.mult,
+        points: cfg.points,
+      };
+      if (cfg.multiMode && cfg.circles?.length) {
+        scene.circles = normalizeCirclesFromConfig(cfg);
+      }
+      drawScene(off.getContext('2d'), off, scene);
 
       const thumb = document.createElement('canvas');
       thumb.width = THUMB_DISPLAY_PX;
@@ -2941,6 +3601,33 @@
       multSlider.max = num(multHi);
       syncPoints(cfg.points ?? points, false);
       syncMult(cfg.mult ?? mult, false);
+
+      const wantMulti = !!cfg.multiMode && cfg.circles && cfg.circles.length > 0;
+      if (wantMulti) {
+        circles = normalizeCirclesFromConfig(cfg);
+        selectedCircleId = circles[0].id;
+        if (!multiMode) {
+          multiMode = true;
+          document.body.classList.add('multi-mode');
+          multiModeBtn.classList.add('multi-active');
+          multLo.title = 'Start multiplier';
+          multHi.title = 'End multiplier';
+          multStep.title = 'Multiplier increment / animation speed';
+        }
+        pullControlsFromCircle();
+        renderCircleTabs();
+      } else if (multiMode) {
+        circles = [];
+        selectedCircleId = null;
+        multiMode = false;
+        document.body.classList.remove('multi-mode');
+        multiModeBtn.classList.remove('multi-active');
+        multLo.title = 'Lower bound of the Multiplier slider';
+        multHi.title = 'Upper bound of the Multiplier slider';
+        multStep.title = 'Step size for arrows and animation speed (units/sec)';
+        circleTabs.innerHTML = '';
+      }
+
       redrawAll();
     }
 
@@ -2960,6 +3647,11 @@
 
     function presetSummary(cfg) {
       const s = normalizeStyleObject(cfg.style);
+      if (cfg.multiMode && cfg.circles?.length) {
+        const n = cfg.circles.length;
+        const pts = cfg.circles.map(c => c.points).join('/');
+        return `${n} circles · ${pts} pts · ${s.colorMode} · ${s.circleShade}`;
+      }
       return `mult ${cfg.mult} · ${cfg.points} pts · ${s.colorMode} · ${s.circleShade}`;
     }
 
@@ -3006,11 +3698,12 @@
         itemEl.querySelector('.preset-style-json').classList.add('invalid');
         return null;
       }
-      return {
+      const result = {
         name: itemEl.querySelector('.preset-name').value.trim(),
         config: {
           style: parsedStyle,
           snapMultOnPause: itemEl.querySelector('[data-field="snapMultOnPause"]').checked,
+          multiMode: itemEl.querySelector('[data-field="multiMode"]')?.checked || false,
           mult: num('[data-field="mult"]'),
           multStep: itemEl.querySelector('[data-field="multStep"]').value,
           multLo: num('[data-field="multLo"]'),
@@ -3019,8 +3712,25 @@
           pointsStep: itemEl.querySelector('[data-field="pointsStep"]').value,
           pointsLo: num('[data-field="pointsLo"]'),
           pointsHi: num('[data-field="pointsHi"]'),
+          circles: (() => {
+            const multi = itemEl.querySelector('[data-field="multiMode"]')?.checked;
+            if (!multi) return undefined;
+            const ta = itemEl.querySelector('.preset-circles-json');
+            if (!ta) return [];
+            try {
+              const parsed = JSON.parse(ta.value.trim());
+              if (!Array.isArray(parsed)) throw new Error('not array');
+              ta.classList.remove('invalid');
+              return parsed;
+            } catch {
+              ta.classList.add('invalid');
+              return null;
+            }
+          })(),
         },
       };
+      if (result.config.multiMode && result.config.circles === null) return null;
+      return result;
     }
 
     function savePresetEdits(id) {
@@ -3078,8 +3788,18 @@
 
       const details = document.createElement('div');
       details.className = 'preset-details' + (openPresetId === preset.id ? ' open' : '');
+      const circlesJson = c.multiMode
+        ? `<div>
+          <div class="preset-style-label">Circles (JSON)</div>
+          <textarea class="preset-style-json preset-circles-json" spellcheck="false">${escapeHtml(JSON.stringify(c.circles || [], null, 2))}</textarea>
+        </div>`
+        : '';
       details.innerHTML = `
         <div class="preset-field-grid">
+          <label class="preset-field" style="display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;color:#aaa;text-transform:none;letter-spacing:0;grid-column:1/-1;">
+            <input data-field="multiMode" type="checkbox" ${c.multiMode ? 'checked' : ''} />
+            Multi-circle mode
+          </label>
           <div class="preset-field"><label>Multiplier</label><input data-field="mult" type="number" step="any" value="${c.mult}" /></div>
           <div class="preset-field"><label>Mult step</label><input data-field="multStep" type="number" step="any" value="${escapeAttr(c.multStep)}" /></div>
           <div class="preset-field"><label>Mult lo</label><input data-field="multLo" type="number" step="any" value="${c.multLo}" /></div>
@@ -3089,6 +3809,7 @@
           <div class="preset-field"><label>Points lo</label><input data-field="pointsLo" type="number" step="1" value="${c.pointsLo}" /></div>
           <div class="preset-field"><label>Points hi</label><input data-field="pointsHi" type="number" step="1" value="${c.pointsHi}" /></div>
         </div>
+        ${circlesJson}
         <label class="preset-field" style="display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;color:#aaa;text-transform:none;letter-spacing:0;">
           <input data-field="snapMultOnPause" type="checkbox" ${c.snapMultOnPause ? 'checked' : ''} />
           Snap multi on pause
@@ -3915,14 +4636,18 @@
       } else if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
         restartMultiplier();
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        toggleMultiMode();
       }
     });
 
     // ── Download ──────────────────────────────────────────────────
 
     el('downloadBtn').addEventListener('click', () => {
-      const m = parseFloat(mult.toFixed(3));
-      const filename = `${m}_mult_${points}_points.png`;
+      const filename = multiMode
+        ? `multi_${circles.length}_circles.png`
+        : `${parseFloat(mult.toFixed(3))}_mult_${points}_points.png`;
       const a = document.createElement('a');
       a.href = canvas.toDataURL('image/png');
       a.download = filename;
