@@ -144,6 +144,9 @@
     body.multi-mode .points-step-input,
     body.multi-mode .points-bound { display: none; }
     body.multi-mode .points-row { grid-template-columns: 20px 20px 58px 1fr 56px; }
+    .sp-multi-style-row { display: none; }
+    body.multi-mode .sp-row.sp-multi-style-row { display: flex; }
+    body.multi-mode .sp-effect-hint.sp-multi-style-row { display: block; }
 
     .circle-tabs {
       display: flex;
@@ -1440,6 +1443,11 @@
           <label for="s-align-end-step">Ref. step</label>
           <input type="number" class="sp-val" id="s-align-end-step" value="1" min="0.0001" step="any" style="flex:1;max-width:none;width:auto;text-align:left;" />
         </div>
+        <div class="sp-row sp-multi-style-row">
+          <label for="s-style-apply-all" title="When enabled, style edits apply to every circle">Apply style to all circles</label>
+          <input type="checkbox" id="s-style-apply-all" />
+        </div>
+        <div class="sp-effect-hint sp-multi-style-row">When off, style edits apply only to the selected circle.</div>
       </div>
 
       <div class="sp-section" id="slider-effects-section">
@@ -1766,6 +1774,7 @@
     let selectedCircleId = null;
     let circles = [];
     let canvasDrag = null;
+    let styleApplyToAll = false;
 
     function newCircleId() {
       return 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
@@ -1773,6 +1782,7 @@
 
     function createCircle(overrides = {}) {
       const pts = overrides.points ?? 200;
+      const { style: styleOverride, ...rest } = overrides;
       return {
         id: newCircleId(),
         x: 0.5,
@@ -1784,7 +1794,8 @@
         multHi: pts,
         multStep: 1,
         points: pts,
-        ...overrides,
+        style: normalizeCircleStyle(styleOverride),
+        ...rest,
       };
     }
 
@@ -1799,6 +1810,7 @@
         multHi: num(multHi),
         multStep: parseFloat(multStep.value) || 1,
         points,
+        style: circleStyleSnapshot(),
       });
     }
 
@@ -1847,6 +1859,7 @@
       c.mult = mult;
       c.multAnim = mult;
       c.points = points;
+      c.style = circleStyleSnapshot();
     }
 
     function pullControlsFromCircle() {
@@ -1864,6 +1877,7 @@
       applyStep(multSlider, multStep);
       syncMult(c.mult, false);
       syncPoints(c.points, false);
+      pullStyleFromCircle();
     }
 
     function addCircle() {
@@ -1881,6 +1895,7 @@
         multHi: base?.multHi ?? 200,
         multStep: base?.multStep ?? 1,
         points: base?.points ?? 200,
+        style: base?.style ? { ...base.style } : circleStyleSnapshot(),
       });
       circles.push(nc);
       selectCircle(nc.id);
@@ -1897,7 +1912,13 @@
     function setMultiMode(on) {
       if (on === multiMode) return;
       if (on) {
-        if (!circles.length) circles = [circleFromGlobals()];
+        if (!circles.length) {
+          circles = [circleFromGlobals()];
+        } else {
+          circles.forEach(c => {
+            if (!c.style) c.style = circleStyleSnapshot();
+          });
+        }
         selectedCircleId = circles[0].id;
         pullControlsFromCircle();
       } else {
@@ -1935,7 +1956,10 @@
     }
 
     function cloneCircles(arr) {
-      return (arr || []).map(c => ({ ...c }));
+      return (arr || []).map(c => ({
+        ...c,
+        style: c.style ? { ...c.style } : circleStyleSnapshot(),
+      }));
     }
 
     function serializeCircles() {
@@ -1950,10 +1974,12 @@
         multHi: c.multHi,
         multStep: c.multStep,
         points: c.points,
+        style: c.style ? { ...c.style } : circleStyleSnapshot(),
       }));
     }
 
     function normalizeCirclesFromConfig(cfg) {
+      const styleFallback = cfg.style || style;
       if (cfg.circles && cfg.circles.length) {
         return cfg.circles.map(c => createCircle({
           id: c.id || newCircleId(),
@@ -1966,6 +1992,7 @@
           multHi: c.multHi ?? c.points ?? 200,
           multStep: parseFloat(c.multStep) || 1,
           points: Math.round(c.points ?? 200),
+          style: normalizeCircleStyle(c.style, styleFallback),
         }));
       }
       return [createCircle({
@@ -1978,6 +2005,7 @@
         multHi: cfg.multHi ?? 200,
         multStep: parseFloat(cfg.multStep) || 1,
         points: Math.round(cfg.points ?? 200),
+        style: normalizeCircleStyle(null, styleFallback),
       })];
     }
 
@@ -1996,10 +2024,11 @@
       const w = canvas.width, h = canvas.height;
       for (let i = circles.length - 1; i >= 0; i--) {
         const c = circles[i];
+        const cs = styleForCircle(c);
         const { cx, cy, r } = circleLayout(c, w, h);
-        const dotR = c.points >= 2 ? Math.max(1.2, 4 - c.points / 80) * style.dotScale : 0;
+        const dotR = c.points >= 2 ? Math.max(1.2, 4 - c.points / 80) * cs.dotScale : 0;
         let bgR = r;
-        if (style.showRing) bgR += style.ringWidth / 2;
+        if (cs.showRing) bgR += cs.ringWidth / 2;
         if (c.points >= 2) bgR = Math.max(bgR, r + dotR);
         const dx = px - cx, dy = py - cy;
         if (dx * dx + dy * dy <= bgR * bgR) return { circle: c, cx, cy, r: bgR };
@@ -2401,6 +2430,49 @@
       solidColor:   '#a78bfa',
     };
 
+    const CIRCLE_STYLE_KEYS = [
+      'circleBgColor', 'circleBgAlpha', 'circleShade', 'circleBgOuter', 'circleBgOuterAlpha',
+      'circleBgInner', 'circleBgInnerAlpha', 'shadeAmount', 'shadeContrast', 'shadeFalloff',
+      'spotHotColor', 'spotSize', 'spotBright', 'auroraAccent', 'auroraBandPos', 'auroraBandWidth',
+      'neonGlowColor', 'neonGlowWidth', 'neonGlowBright',
+      'showRing', 'ringColor', 'ringWidth', 'showDots', 'dotColor', 'dotScale',
+      'lineWidthMax', 'lineOpacity', 'colorMode', 'hueStart', 'hueEnd', 'saturation', 'lightness', 'solidColor',
+    ];
+
+    function circleStyleSnapshot(from) {
+      const src = from || style;
+      const snap = {};
+      for (const k of CIRCLE_STYLE_KEYS) snap[k] = src[k];
+      return snap;
+    }
+
+    function normalizeCircleStyle(s, fallback) {
+      const fb = fallback || style;
+      const base = circleStyleSnapshot(fb);
+      if (!s || typeof s !== 'object') return { ...base };
+      const out = { ...base };
+      for (const k of CIRCLE_STYLE_KEYS) {
+        if (s[k] !== undefined) out[k] = s[k];
+      }
+      return out;
+    }
+
+    function styleForCircle(c, pageStyle) {
+      const ps = pageStyle || style;
+      return { ...ps, ...normalizeCircleStyle(c?.style, ps) };
+    }
+
+    function commitStyleToCircles() {
+      if (!multiMode || !circles.length) return;
+      const snap = circleStyleSnapshot();
+      if (styleApplyToAll) {
+        for (const c of circles) c.style = { ...snap };
+      } else {
+        const c = getSelectedCircle();
+        if (c) c.style = { ...snap };
+      }
+    }
+
     function parseHex(hex) {
       if (!hex || hex[0] !== '#') return { r: 0, g: 0, b: 0 };
       const h = hex.length >= 7 ? hex.slice(1, 7) : hex.slice(1).padEnd(6, '0');
@@ -2435,26 +2507,27 @@
       return `rgba(${r},${g},${bl},${Math.max(0, Math.min(1, al))})`;
     }
 
-    function fillCircleBackground(targetCtx, cx, cy, bgR) {
+    function fillCircleBackground(targetCtx, cx, cy, bgR, styleObj) {
+      const s = styleObj || style;
       targetCtx.beginPath();
       targetCtx.arc(cx, cy, bgR, 0, Math.PI * 2);
 
-      const mode = style.circleShade;
-      const mid  = style.circleBgColor;
-      const midA = style.circleBgAlpha ?? 1;
-      if (mode === 'none' || style.shadeAmount <= 0) {
+      const mode = s.circleShade;
+      const mid  = s.circleBgColor;
+      const midA = s.circleBgAlpha ?? 1;
+      if (mode === 'none' || s.shadeAmount <= 0) {
         targetCtx.fillStyle = hexToRgba(mid, midA);
         targetCtx.fill();
         return;
       }
 
-      const amt   = style.shadeAmount;
-      const c     = style.shadeContrast;
-      const f     = style.shadeFalloff;
-      const outer = style.circleBgOuter;
-      const outerA = style.circleBgOuterAlpha ?? 1;
-      const inner = style.circleBgInner;
-      const innerA = style.circleBgInnerAlpha ?? 1;
+      const amt   = s.shadeAmount;
+      const c     = s.shadeContrast;
+      const f     = s.shadeFalloff;
+      const outer = s.circleBgOuter;
+      const outerA = s.circleBgOuterAlpha ?? 1;
+      const inner = s.circleBgInner;
+      const innerA = s.circleBgInnerAlpha ?? 1;
       const innerStop = 0.06 + f * 0.22;
       const midStop   = 0.22 + f * 0.48;
       const outerStop = 0.52 + f * 0.44;
@@ -2479,18 +2552,18 @@
           break;
         }
         case 'spotlight': {
-          const spotEdge = 0.04 + style.spotSize * 0.62;
+          const spotEdge = 0.04 + s.spotSize * 0.62;
           const t1 = c * 0.3;
-          grad.addColorStop(0, tintColor(mixHex(outer, style.spotHotColor, c * style.spotBright), outerA));
+          grad.addColorStop(0, tintColor(mixHex(outer, s.spotHotColor, c * s.spotBright), outerA));
           grad.addColorStop(spotEdge, tintColor(mixHex(mid, outer, t1), midA + (outerA - midA) * t1));
           grad.addColorStop(outerStop, tintColor(mid, midA));
           grad.addColorStop(1, tintColor(mixHex(inner, mid, c), innerA + (midA - innerA) * c));
           break;
         }
         case 'aurora': {
-          const acc = style.auroraAccent;
-          const bp  = style.auroraBandPos;
-          const bw  = style.auroraBandWidth;
+          const acc = s.auroraAccent;
+          const bp  = s.auroraBandPos;
+          const bw  = s.auroraBandWidth;
           const bandLo = Math.max(0.04, bp - bw / 2);
           const bandHi = Math.min(0.98, bp + bw / 2);
           const t1 = 1 - c * 0.5;
@@ -2503,14 +2576,14 @@
           break;
         }
         case 'neon': {
-          const glow = style.neonGlowColor;
-          const gb   = style.neonGlowBright;
-          const glowStart = Math.max(0.5, 1 - style.neonGlowWidth);
+          const glow = s.neonGlowColor;
+          const gb   = s.neonGlowBright;
+          const glowStart = Math.max(0.5, 1 - s.neonGlowWidth);
           const t1 = c * 0.4;
           grad.addColorStop(0, tintColor(inner, innerA));
           grad.addColorStop(midStop, tintColor(mixHex(inner, mid, t1), innerA + (midA - innerA) * t1));
           grad.addColorStop(glowStart, tintColor(mixHex(mid, glow, c * gb * 0.5), midA));
-          grad.addColorStop(glowStart + style.neonGlowWidth * 0.4, tintColor(mixHex(outer, glow, c * gb * 0.75), outerA));
+          grad.addColorStop(glowStart + s.neonGlowWidth * 0.4, tintColor(mixHex(outer, glow, c * gb * 0.75), outerA));
           grad.addColorStop(1, tintColor(mixHex(outer, glow, c * gb * 0.5), outerA));
           break;
         }
@@ -2522,46 +2595,47 @@
 
     // ── draw ──────────────────────────────────────────────────────
 
-    function drawCircleAt(targetCtx, cx, cy, r, multVal, nPts) {
-      const dotR = nPts >= 2 ? Math.max(1.2, 4 - nPts / 80) * style.dotScale : 0;
+    function drawCircleAt(targetCtx, cx, cy, r, multVal, nPts, styleObj) {
+      const s = styleObj || style;
+      const dotR = nPts >= 2 ? Math.max(1.2, 4 - nPts / 80) * s.dotScale : 0;
       let bgR = r;
-      if (style.showRing) bgR += style.ringWidth / 2;
+      if (s.showRing) bgR += s.ringWidth / 2;
       if (nPts >= 2) bgR = Math.max(bgR, r + dotR);
 
-      fillCircleBackground(targetCtx, cx, cy, bgR);
+      fillCircleBackground(targetCtx, cx, cy, bgR, s);
 
-      if (style.showRing) {
-        targetCtx.strokeStyle = style.ringColor;
-        targetCtx.lineWidth   = style.ringWidth;
+      if (s.showRing) {
+        targetCtx.strokeStyle = s.ringColor;
+        targetCtx.lineWidth   = s.ringWidth;
         targetCtx.beginPath();
         targetCtx.arc(cx, cy, r, 0, Math.PI * 2);
         targetCtx.stroke();
       }
 
       if (nPts < 2) return bgR;
-      if (style.showDots) {
+      if (s.showDots) {
         for (let i = 0; i < nPts; i++) {
           const a = (2 * Math.PI * i) / nPts - Math.PI / 2;
-          targetCtx.fillStyle = style.dotColor;
+          targetCtx.fillStyle = s.dotColor;
           targetCtx.beginPath();
           targetCtx.arc(cx + r * Math.cos(a), cy + r * Math.sin(a), dotR, 0, Math.PI * 2);
           targetCtx.fill();
         }
       }
 
-      targetCtx.lineWidth = Math.max(0.3, style.lineWidthMax - nPts / 300);
+      targetCtx.lineWidth = Math.max(0.3, s.lineWidthMax - nPts / 300);
       for (let i = 0; i < nPts; i++) {
         const j  = (i * multVal) % nPts;
         const a1 = (2 * Math.PI * i) / nPts - Math.PI / 2;
         const a2 = (2 * Math.PI * j) / nPts - Math.PI / 2;
         let sc;
-        if (style.colorMode === 'solid') {
-          sc = hexToRgba(style.solidColor, style.lineOpacity);
-        } else if (style.colorMode === 'hue-range') {
-          const hue = style.hueStart + (i / nPts) * (style.hueEnd - style.hueStart);
-          sc = `hsla(${hue},${style.saturation}%,${style.lightness}%,${style.lineOpacity})`;
+        if (s.colorMode === 'solid') {
+          sc = hexToRgba(s.solidColor, s.lineOpacity);
+        } else if (s.colorMode === 'hue-range') {
+          const hue = s.hueStart + (i / nPts) * (s.hueEnd - s.hueStart);
+          sc = `hsla(${hue},${s.saturation}%,${s.lightness}%,${s.lineOpacity})`;
         } else {
-          sc = `hsla(${(i / nPts) * 360},${style.saturation}%,${style.lightness}%,${style.lineOpacity})`;
+          sc = `hsla(${(i / nPts) * 360},${s.saturation}%,${s.lightness}%,${s.lineOpacity})`;
         }
         targetCtx.strokeStyle = sc;
         targetCtx.beginPath();
@@ -2591,7 +2665,7 @@
         targetCtx.fillRect(0, 0, w, h);
         for (const c of scene.circles) {
           const { cx, cy, r } = circleLayout(c, w, h);
-          drawCircleAt(targetCtx, cx, cy, r, c.mult ?? c.multAnim ?? 0, Math.round(c.points));
+          drawCircleAt(targetCtx, cx, cy, r, c.mult ?? c.multAnim ?? 0, Math.round(c.points), styleForCircle(c));
         }
       } else {
         drawCircle(targetCtx, targetCanvas, scene.mult ?? 2, Math.round(scene.points ?? 200));
@@ -2602,11 +2676,12 @@
       if (!multiMode || !selectedCircleId) return;
       const c = getSelectedCircle();
       if (!c) return;
+      const cs = styleForCircle(c);
       const w = canvas.width, h = canvas.height;
       const { cx, cy, r } = circleLayout(c, w, h);
-      const dotR = c.points >= 2 ? Math.max(1.2, 4 - c.points / 80) * style.dotScale : 0;
+      const dotR = c.points >= 2 ? Math.max(1.2, 4 - c.points / 80) * cs.dotScale : 0;
       let bgR = r;
-      if (style.showRing) bgR += style.ringWidth / 2;
+      if (cs.showRing) bgR += cs.ringWidth / 2;
       if (c.points >= 2) bgR = Math.max(bgR, r + dotR);
 
       const dpr = devicePixelRatio;
@@ -2664,7 +2739,7 @@
         ctx.fillRect(0, 0, w, h);
         for (const c of circles) {
           const { cx, cy, r } = circleLayout(c, w, h);
-          drawCircleAt(ctx, cx, cy, r, c.mult, c.points);
+          drawCircleAt(ctx, cx, cy, r, c.mult, c.points, styleForCircle(c));
         }
         drawSelectionOverlay();
       } else {
@@ -2705,11 +2780,12 @@
     function selectedCircleBounds() {
       const c = getSelectedCircle();
       if (!c) return null;
+      const cs = styleForCircle(c);
       const w = canvas.width, h = canvas.height;
       const { cx, cy, r } = circleLayout(c, w, h);
-      const dotR = c.points >= 2 ? Math.max(1.2, 4 - c.points / 80) * style.dotScale : 0;
+      const dotR = c.points >= 2 ? Math.max(1.2, 4 - c.points / 80) * cs.dotScale : 0;
       let bgR = r;
-      if (style.showRing) bgR += style.ringWidth / 2;
+      if (cs.showRing) bgR += cs.ringWidth / 2;
       if (c.points >= 2) bgR = Math.max(bgR, r + dotR);
       return { c, cx, cy, bgR };
     }
@@ -2876,6 +2952,20 @@
       if (analysisResultsVisible()) updateAnalysisCircle();
     }
 
+    function pullStyleFromCircle() {
+      const c = getSelectedCircle();
+      if (!c) return;
+      if (!c.style) c.style = circleStyleSnapshot();
+      const cs = normalizeCircleStyle(c.style);
+      for (const k of CIRCLE_STYLE_KEYS) style[k] = cs[k];
+      syncStyleInputsFromObject();
+    }
+
+    function styleChanged() {
+      commitStyleToCircles();
+      redrawAll();
+    }
+
     const SLIDER_REGISTRY = {};
 
     function bindRange(id, valId, prop, suffix, decimals) {
@@ -2890,7 +2980,7 @@
         style[prop] = v;
         valEl.value = v.toFixed(decimals);
         updateSliderEffectCenter(id, v);
-        redrawAll();
+        styleChanged();
       });
       valEl.addEventListener('change', () => {
         const raw = parseFloat(valEl.value);
@@ -2900,14 +2990,14 @@
         inp.value = v;
         valEl.value = v.toFixed(decimals);
         updateSliderEffectCenter(id, v);
-        redrawAll();
+        styleChanged();
       });
     }
     function bindColor(id, prop) {
-      el(id).addEventListener('input', () => { style[prop] = el(id).value; redrawAll(); });
+      el(id).addEventListener('input', () => { style[prop] = el(id).value; styleChanged(); });
     }
     function bindCheck(id, prop) {
-      el(id).addEventListener('change', () => { style[prop] = el(id).checked; redrawAll(); });
+      el(id).addEventListener('change', () => { style[prop] = el(id).checked; styleChanged(); });
     }
 
     el('s-page-bg-color').addEventListener('input', () => {
@@ -2920,7 +3010,7 @@
         style.circleBgColor = el(id).value;
         el('s-circle-bg-color').value = style.circleBgColor;
         el('s-circle-bg-color-shaded').value = style.circleBgColor;
-        redrawAll();
+        styleChanged();
       });
     }
     bindCircleBaseColor('s-circle-bg-color');
@@ -2930,7 +3020,7 @@
       style.circleBgAlpha = clamp(parseFloat(v), 0, 1);
       setRangePair('s-circle-bg-opacity', 's-circle-bg-opacity-val', style.circleBgAlpha, 2);
       setRangePair('s-circle-bg-base-opacity', 's-circle-bg-base-opacity-val', style.circleBgAlpha, 2);
-      redrawAll();
+      styleChanged();
     }
     ['s-circle-bg-opacity', 's-circle-bg-base-opacity'].forEach(id => {
       el(id).addEventListener('input', () => syncCircleBgAlpha(el(id).value));
@@ -2940,7 +3030,7 @@
     el('s-circle-shade').addEventListener('change', () => {
       style.circleShade = el('s-circle-shade').value;
       updateShadeUI();
-      redrawAll();
+      styleChanged();
     });
     bindColor('s-circle-bg-outer', 'circleBgOuter');
     bindColor('s-circle-bg-inner', 'circleBgInner');
@@ -3135,6 +3225,7 @@
       if (meta?.prop) style[meta.prop] = v;
       inp.value = v;
       if (valEl) valEl.value = v.toFixed(meta?.decimals ?? 2);
+      if (meta?.prop && CIRCLE_STYLE_KEYS.includes(meta.prop)) commitStyleToCircles();
     }
 
     function applyBounds(value, min, max, bounds) {
@@ -3475,7 +3566,12 @@
     el('s-color-mode').addEventListener('change', () => {
       style.colorMode = el('s-color-mode').value;
       updateColorModeUI();
-      redrawAll();
+      styleChanged();
+    });
+
+    el('s-style-apply-all').addEventListener('change', () => {
+      styleApplyToAll = el('s-style-apply-all').checked;
+      if (styleApplyToAll && multiMode) commitStyleToCircles();
     });
 
     function setRangePair(rangeId, valId, v, decimals) {
