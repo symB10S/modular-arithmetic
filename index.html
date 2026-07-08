@@ -808,11 +808,13 @@
       #presets-panel { width: 100%; border-right: none; }
     }
 
-    .presets-save-row {
+    .presets-save-row,
+    .presets-io-row {
       display: flex;
       gap: 0.4rem;
       margin-bottom: 0.25rem;
     }
+    .presets-io-row { margin-bottom: 0.6rem; }
     .presets-save-row input[type="text"] {
       flex: 1;
       min-width: 0;
@@ -1662,6 +1664,11 @@
       <div class="presets-save-row">
         <input type="text" id="presetNameInput" placeholder="Configuration name…" maxlength="64" />
         <button class="presets-action-btn" id="presetSaveBtn" type="button">Save</button>
+      </div>
+      <div class="presets-io-row">
+        <button class="presets-action-btn" id="presetExportAllBtn" type="button" title="Download all saved configurations as JSON">Export all</button>
+        <button class="presets-action-btn" id="presetImportBtn" type="button" title="Import configurations from a JSON file">Import</button>
+        <input type="file" id="presetImportFile" accept=".json,application/json" hidden />
       </div>
       <div class="presets-list" id="presetsList"></div>
     </div>
@@ -3624,6 +3631,8 @@
     // ── Saved configurations (localStorage) ─────────────────────
 
     const PRESETS_STORAGE_KEY = 'modArith-presets-v1';
+    const PRESETS_EXPORT_FORMAT = 'modArith-presets';
+    const PRESETS_EXPORT_VERSION = 1;
     const presetsPanel   = el('presets-panel');
     const presetsOverlay = el('presets-overlay');
     const presetsList    = el('presetsList');
@@ -3797,6 +3806,144 @@
 
     function savePresetsToStorage() {
       localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(presets));
+    }
+
+    function presetExportFilename(label) {
+      const stamp = new Date().toISOString().slice(0, 10);
+      const safe = String(label || 'presets').replace(/[^\w\-]+/g, '_').slice(0, 40) || 'presets';
+      return `modarith-${safe}_${stamp}.json`;
+    }
+
+    function buildPresetExportPayload(items) {
+      return {
+        format: PRESETS_EXPORT_FORMAT,
+        version: PRESETS_EXPORT_VERSION,
+        exportedAt: new Date().toISOString(),
+        presets: items.map(p => ({
+          name: p.name,
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt,
+          config: p.config,
+        })),
+      };
+    }
+
+    function downloadJsonFile(filename, data) {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function exportAllPresets() {
+      if (!presets.length) {
+        alert('No saved configurations to export.');
+        return;
+      }
+      downloadJsonFile(presetExportFilename('presets'), buildPresetExportPayload(presets));
+    }
+
+    function exportSinglePreset(id) {
+      const preset = presets.find(p => p.id === id);
+      if (!preset) return;
+      downloadJsonFile(
+        presetExportFilename(`preset_${preset.name}`),
+        buildPresetExportPayload([preset]),
+      );
+    }
+
+    function validateImportedCircle(c, styleFallback) {
+      if (!c || typeof c !== 'object') return null;
+      const pts = Math.round(parseFloat(c.points)) || 200;
+      const x = typeof c.x === 'number' && isFinite(c.x) ? clamp(c.x, 0.05, 0.95) : 0.5;
+      const y = typeof c.y === 'number' && isFinite(c.y) ? clamp(c.y, 0.05, 0.95) : 0.5;
+      const size = typeof c.size === 'number' && isFinite(c.size) ? clamp(c.size, 0.1, 0.9) : 0.44;
+      return {
+        id: typeof c.id === 'string' ? c.id : newCircleId(),
+        x,
+        y,
+        size,
+        mult: parseFloat(c.mult) || 2,
+        multAnim: parseFloat(c.multAnim ?? c.mult) || 2,
+        multLo: isFinite(parseFloat(c.multLo)) ? parseFloat(c.multLo) : 0,
+        multHi: isFinite(parseFloat(c.multHi)) ? parseFloat(c.multHi) : pts,
+        multStep: String(c.multStep ?? 1),
+        points: pts,
+        style: normalizeCircleStyle(c.style, styleFallback),
+      };
+    }
+
+    function validateImportedConfig(cfg) {
+      if (!cfg || typeof cfg !== 'object') return null;
+      const normalized = {
+        style: normalizeStyleObject(cfg.style),
+        snapMultOnPause: !!cfg.snapMultOnPause,
+        alignEndTimeEnabled: !!cfg.alignEndTimeEnabled,
+        alignEndTimePoints: Math.round(cfg.alignEndTimePoints ?? 100),
+        alignEndTimeStep: String(cfg.alignEndTimeStep ?? 1),
+        sliderEffects: cfg.sliderEffects ?? null,
+        effectsMaster: !!cfg.effectsMaster,
+        multiMode: !!cfg.multiMode,
+        mult: parseFloat(cfg.mult) || 2,
+        multStep: String(cfg.multStep ?? 1),
+        multLo: parseFloat(cfg.multLo) || 0,
+        multHi: parseFloat(cfg.multHi) || 200,
+        points: Math.round(cfg.points ?? 200),
+        pointsStep: String(cfg.pointsStep ?? 1),
+        pointsLo: parseFloat(cfg.pointsLo) || 2,
+        pointsHi: parseFloat(cfg.pointsHi) || 2000,
+      };
+      if (normalized.multiMode) {
+        if (!Array.isArray(cfg.circles) || !cfg.circles.length) return null;
+        normalized.circles = cfg.circles
+          .map(c => validateImportedCircle(c, normalized.style))
+          .filter(Boolean);
+        if (!normalized.circles.length) return null;
+        normalizeCirclesFromConfig(normalized);
+      }
+      return normalized;
+    }
+
+    function parseImportedPresetEntries(data) {
+      if (!data || typeof data !== 'object') return [];
+      let rawList = [];
+      if (data.format === PRESETS_EXPORT_FORMAT && Array.isArray(data.presets)) {
+        rawList = data.presets;
+      } else if (Array.isArray(data)) {
+        rawList = data;
+      } else if (data.config && typeof data.config === 'object') {
+        rawList = [data];
+      } else if (data.style || data.multiMode !== undefined || data.mult !== undefined) {
+        rawList = [{ name: 'Imported configuration', config: data }];
+      }
+      return rawList;
+    }
+
+    function importPresetsFromJson(data) {
+      const entries = parseImportedPresetEntries(data);
+      if (!entries.length) return { imported: 0, skipped: 0 };
+
+      let imported = 0;
+      let skipped = 0;
+      const added = [];
+      for (const entry of entries) {
+        const name = String(entry.name || 'Imported configuration').trim();
+        const config = validateImportedConfig(entry.config || entry);
+        if (!name || !config) {
+          skipped++;
+          continue;
+        }
+        added.push(createPreset(name, config, captureConfigSnapshot(config)));
+        imported++;
+      }
+      if (added.length) {
+        presets = [...added, ...presets];
+        savePresetsToStorage();
+        renderPresetsList();
+      }
+      return { imported, skipped };
     }
 
     function presetSummary(cfg) {
@@ -3984,6 +4131,7 @@
         <div class="preset-detail-actions">
           <button class="presets-action-btn" type="button" data-action="save-edits">Save edits</button>
           <button class="presets-action-btn" type="button" data-action="overwrite">Update from current</button>
+          <button class="presets-action-btn" type="button" data-action="export">Export</button>
           <button class="presets-action-btn danger" type="button" data-action="delete">Delete</button>
         </div>
       `;
@@ -4005,6 +4153,7 @@
       });
       details.querySelector('[data-action="save-edits"]').addEventListener('click', () => savePresetEdits(preset.id));
       details.querySelector('[data-action="overwrite"]').addEventListener('click', () => overwritePreset(preset.id));
+      details.querySelector('[data-action="export"]').addEventListener('click', () => exportSinglePreset(preset.id));
       details.querySelector('[data-action="delete"]').addEventListener('click', () => {
         if (confirm(`Delete "${preset.name}"?`)) deletePreset(preset.id);
       });
@@ -4048,6 +4197,35 @@
       if (e.key === 'Enter') {
         if (addPreset(presetNameInput.value)) presetNameInput.value = '';
       }
+    });
+
+    const presetImportFile = el('presetImportFile');
+    el('presetExportAllBtn').addEventListener('click', exportAllPresets);
+    el('presetImportBtn').addEventListener('click', () => presetImportFile.click());
+    presetImportFile.addEventListener('change', () => {
+      const file = presetImportFile.files?.[0];
+      presetImportFile.value = '';
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          const { imported, skipped } = importPresetsFromJson(data);
+          if (!imported && skipped) {
+            alert('Import failed: no valid configurations found in that file.');
+          } else if (skipped) {
+            alert(`Imported ${imported} configuration${imported === 1 ? '' : 's'}. Skipped ${skipped} invalid entr${skipped === 1 ? 'y' : 'ies'}.`);
+          } else if (imported) {
+            alert(`Imported ${imported} configuration${imported === 1 ? '' : 's'}.`);
+          } else {
+            alert('No configurations found in that file.');
+          }
+        } catch {
+          alert('Import failed: file is not valid JSON.');
+        }
+      };
+      reader.onerror = () => alert('Import failed: could not read the file.');
+      reader.readAsText(file);
     });
 
     loadPresetsFromStorage();
