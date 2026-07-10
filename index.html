@@ -1339,6 +1339,12 @@
             <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
           </svg>
         </button>
+        <button class="topbar-btn" id="topbarCurlSimBtn" title="Curl flow simulation (S)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M2 12c2-4 6-6 10-4s6 6 4 10"/>
+            <path d="M14 12c1 3 4 5 8 4"/>
+          </svg>
+        </button>
         <button class="topbar-btn" id="topbarFullscreenBtn" title="Fullscreen (P)">
           <svg class="fs-enter" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <polyline points="15 3 21 3 21 9"/>
@@ -1767,6 +1773,7 @@
     const topbarMultPlayBtn   = el('topbarMultPlayBtn');
     const topbarRestartBtn    = el('topbarRestartBtn');
     const topbarFullscreenBtn = el('topbarFullscreenBtn');
+    const topbarCurlSimBtn    = el('topbarCurlSimBtn');
     const multiModeBtn        = el('multiModeBtn');
     const circleTabs          = el('circleTabs');
     const addCircleBtn        = el('addCircleBtn');
@@ -1782,6 +1789,14 @@
     let circles = [];
     let canvasDrag = null;
     let styleApplyToAll = false;
+
+    let curlSimPlaying = false;
+    let curlSimEpoch = 0;
+    const CURL_SPATIAL = 2.8;
+    const CURL_TIME = 0.14;
+    const CURL_SPEED = 0.09;
+    const CURL_BOUNDARY_ZONE = 0.14;
+    const CURL_SEPARATION_PAD = 0.012;
 
     function newCircleId() {
       return 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
@@ -1905,6 +1920,7 @@
         style: base?.style ? { ...base.style } : circleStyleSnapshot(),
       });
       circles.push(nc);
+      constrainCirclePositions(canvas.width, canvas.height);
       selectCircle(nc.id);
     }
 
@@ -1950,6 +1966,8 @@
       multiMode = on;
       document.body.classList.toggle('multi-mode', on);
       multiModeBtn.classList.toggle('multi-active', on);
+      syncCurlSimUI();
+      syncAnimationLoop();
       multLo.title = on ? 'Start multiplier' : 'Lower bound of the Multiplier slider';
       multHi.title = on ? 'End multiplier' : 'Upper bound of the Multiplier slider';
       multStep.title = on ? 'Multiplier increment / animation speed' : 'Step size for arrows and animation speed (units/sec)';
@@ -2183,7 +2201,8 @@
     }
 
     function isAnimationActive() {
-      return multPlaying || pointsPlaying || sliderEffectsPlaying();
+      return multPlaying || pointsPlaying || sliderEffectsPlaying()
+        || (curlSimPlaying && multiMode);
     }
 
     function syncAnimationLoop() {
@@ -2316,6 +2335,262 @@
     topbarFullscreenBtn.addEventListener('click', toggleFullscreen);
     pointsPlayBtn.addEventListener('click', () => toggleRowPlay(pointsPlayBtn, v => { pointsPlaying = v; }));
 
+    // ── curl noise flow field ─────────────────────────────────────
+
+    const NOISE_PERM = (() => {
+      const p = new Uint8Array(256);
+      for (let i = 0; i < 256; i++) p[i] = i;
+      for (let i = 255; i > 0; i--) {
+        const j = (Math.random() * (i + 1)) | 0;
+        const tmp = p[i]; p[i] = p[j]; p[j] = tmp;
+      }
+      const perm = new Uint8Array(512);
+      for (let i = 0; i < 512; i++) perm[i] = p[i & 255];
+      return perm;
+    })();
+
+    function noiseFade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+    function noiseLerp(a, b, t) { return a + (b - a) * t; }
+
+    function noiseGrad3(hash, x, y, z) {
+      const h = hash & 15;
+      const u = h < 8 ? x : y;
+      const v = h < 4 ? y : (h === 12 || h === 14 ? x : z);
+      return ((h & 1) ? -u : u) + ((h & 2) ? -v : v);
+    }
+
+    function perlin3(x, y, z) {
+      const X = Math.floor(x) & 255;
+      const Y = Math.floor(y) & 255;
+      const Z = Math.floor(z) & 255;
+      x -= Math.floor(x);
+      y -= Math.floor(y);
+      z -= Math.floor(z);
+      const u = noiseFade(x), v = noiseFade(y), w = noiseFade(z);
+      const p = NOISE_PERM;
+      const A = p[X] + Y, AA = p[A] + Z, AB = p[A + 1] + Z;
+      const B = p[X + 1] + Y, BA = p[B] + Z, BB = p[B + 1] + Z;
+      return noiseLerp(
+        noiseLerp(
+          noiseLerp(noiseGrad3(p[AA], x, y, z), noiseGrad3(p[BA], x - 1, y, z), u),
+          noiseLerp(noiseGrad3(p[AB], x, y - 1, z), noiseGrad3(p[BB], x - 1, y - 1, z), u),
+          v
+        ),
+        noiseLerp(
+          noiseLerp(noiseGrad3(p[AA + 1], x, y, z - 1), noiseGrad3(p[BA + 1], x - 1, y, z - 1), u),
+          noiseLerp(noiseGrad3(p[AB + 1], x, y - 1, z - 1), noiseGrad3(p[BB + 1], x - 1, y - 1, z - 1), u),
+          v
+        ),
+        w
+      );
+    }
+
+    function curlNoise2D(x, y, t) {
+      const e = 0.0008;
+      const ddy = (perlin3(x, y + e, t) - perlin3(x, y - e, t)) / (2 * e);
+      const ddx = (perlin3(x + e, y, t) - perlin3(x - e, y, t)) / (2 * e);
+      return { x: ddy, y: -ddx };
+    }
+
+    function sampleCurlField(x, y, time) {
+      const nx = x * CURL_SPATIAL;
+      const ny = y * CURL_SPATIAL;
+      const t = time * CURL_TIME;
+      let vx = 0, vy = 0, weight = 0;
+
+      const layers = [
+        { sx: 1, sy: 1, st: 1, ox: 0, oy: 0, ot: 0, amp: 1 },
+        { sx: 2.15, sy: 2.15, st: 1.35, ox: 97, oy: 43, ot: 17, amp: 0.55 },
+        { sx: 4.4, sy: 4.4, st: 1.85, ox: -131, oy: 71, ot: -23, amp: 0.28 },
+      ];
+
+      for (const layer of layers) {
+        const curl = curlNoise2D(
+          nx * layer.sx + layer.ox,
+          ny * layer.sy + layer.oy,
+          t * layer.st + layer.ot
+        );
+        vx += curl.x * layer.amp;
+        vy += curl.y * layer.amp;
+        weight += layer.amp;
+      }
+
+      const inv = 1 / (weight || 1);
+      const len = Math.hypot(vx, vy) || 1;
+      const norm = Math.min(1, 1.2 / len);
+      return { x: vx * inv * norm, y: vy * inv * norm };
+    }
+
+    function circleExtentsNorm(c, w, h) {
+      const base = Math.min(w, h);
+      const rPx = c.size * base;
+      const rx = rPx / w;
+      const ry = rPx / h;
+      return {
+        rx, ry, rPx,
+        minX: rx,
+        maxX: 1 - rx,
+        minY: ry,
+        maxY: 1 - ry,
+      };
+    }
+
+    function clampCircleToBounds(c, w, h) {
+      const b = circleExtentsNorm(c, w, h);
+      c.x = clamp(c.x, b.minX, b.maxX);
+      c.y = clamp(c.y, b.minY, b.maxY);
+    }
+
+    function adjustFlowForBoundaries(x, y, flow, rx, ry) {
+      let fx = flow.x;
+      let fy = flow.y;
+      const zone = Math.max(rx, ry) + CURL_BOUNDARY_ZONE;
+
+      const walls = [
+        { dist: x - rx, inwardX: 1, inwardY: 0 },
+        { dist: (1 - rx) - x, inwardX: -1, inwardY: 0 },
+        { dist: y - ry, inwardX: 0, inwardY: 1 },
+        { dist: (1 - ry) - y, inwardX: 0, inwardY: -1 },
+      ];
+
+      for (const wall of walls) {
+        if (wall.dist >= zone) continue;
+        const t = 1 - Math.max(0, wall.dist) / zone;
+        const smooth = t * t * (3 - 2 * t);
+
+        fx += wall.inwardX * smooth * 2.2;
+        fy += wall.inwardY * smooth * 2.2;
+
+        if (wall.inwardX !== 0 && fx * wall.inwardX < 0) fx *= 1 - smooth * 0.95;
+        if (wall.inwardY !== 0 && fy * wall.inwardY < 0) fy *= 1 - smooth * 0.95;
+      }
+
+      const len = Math.hypot(fx, fy) || 1;
+      if (len > 1.4) {
+        const s = 1.2 / len;
+        fx *= s;
+        fy *= s;
+      }
+      return { x: fx, y: fy };
+    }
+
+    function adjustFlowForCircles(x, y, self, w, h) {
+      const base = Math.min(w, h);
+      let fx = 0;
+      let fy = 0;
+
+      for (const other of circles) {
+        if (other.id === self.id) continue;
+        const dx = (x - other.x) * w;
+        const dy = (y - other.y) * h;
+        const dist = Math.hypot(dx, dy);
+        const minDist = (self.size + other.size) * base;
+        const zone = minDist * 1.75;
+        if (dist >= zone || dist < 1e-6) continue;
+
+        const t = 1 - dist / zone;
+        const smooth = t * t;
+        fx += (dx / dist) * smooth * 1.4;
+        fy += (dy / dist) * smooth * 1.4;
+      }
+
+      return { x: fx, y: fy };
+    }
+
+    function resolveCircleOverlaps(w, h, iterations = 5) {
+      const base = Math.min(w, h);
+      const padPx = CURL_SEPARATION_PAD * base;
+
+      for (let iter = 0; iter < iterations; iter++) {
+        let moved = false;
+
+        for (let i = 0; i < circles.length; i++) {
+          for (let j = i + 1; j < circles.length; j++) {
+            const a = circles[i];
+            const b = circles[j];
+            const ra = a.size * base;
+            const rb = b.size * base;
+            const dx = (b.x - a.x) * w;
+            const dy = (b.y - a.y) * h;
+            const dist = Math.hypot(dx, dy);
+            const minDist = ra + rb + padPx;
+
+            if (dist >= minDist) continue;
+
+            if (dist > 1e-6) {
+              const overlap = minDist - dist;
+              const nx = dx / dist;
+              const ny = dy / dist;
+              const pushX = nx * overlap * 0.5 / w;
+              const pushY = ny * overlap * 0.5 / h;
+              a.x -= pushX;
+              a.y -= pushY;
+              b.x += pushX;
+              b.y += pushY;
+            } else {
+              const angle = (i * 2.399963 + j * 1.713524) % (Math.PI * 2);
+              const pushX = Math.cos(angle) * minDist * 0.5 / w;
+              const pushY = Math.sin(angle) * minDist * 0.5 / h;
+              a.x -= pushX;
+              a.y -= pushY;
+              b.x += pushX;
+              b.y += pushY;
+            }
+            moved = true;
+          }
+        }
+
+        for (const c of circles) clampCircleToBounds(c, w, h);
+        if (!moved) break;
+      }
+    }
+
+    function constrainCirclePositions(w, h) {
+      for (const c of circles) clampCircleToBounds(c, w, h);
+      resolveCircleOverlaps(w, h);
+    }
+
+    function tickCurlSimulation(dt, ts) {
+      if (!multiMode || !curlSimPlaying || !circles.length) return;
+      const w = canvas.width;
+      const h = canvas.height;
+      const time = (ts - curlSimEpoch) / 1000;
+
+      for (const c of circles) {
+        const { rx, ry } = circleExtentsNorm(c, w, h);
+        let flow = sampleCurlField(c.x, c.y, time);
+        flow = adjustFlowForBoundaries(c.x, c.y, flow, rx, ry);
+
+        const avoid = adjustFlowForCircles(c.x, c.y, c, w, h);
+        flow.x += avoid.x;
+        flow.y += avoid.y;
+
+        c.x += flow.x * CURL_SPEED * dt;
+        c.y += flow.y * CURL_SPEED * dt;
+      }
+
+      constrainCirclePositions(w, h);
+    }
+
+    function syncCurlSimUI() {
+      topbarCurlSimBtn.classList.toggle('active', curlSimPlaying);
+      document.body.classList.toggle('curl-sim-active', curlSimPlaying && multiMode);
+    }
+
+    function toggleCurlSim() {
+      if (!curlSimPlaying && !multiMode) setMultiMode(true);
+      curlSimPlaying = !curlSimPlaying;
+      if (curlSimPlaying) {
+        curlSimEpoch = performance.now();
+        constrainCirclePositions(canvas.width, canvas.height);
+      }
+      syncCurlSimUI();
+      syncAnimationLoop();
+      draw();
+    }
+
+    topbarCurlSimBtn.addEventListener('click', toggleCurlSim);
+
     // ── animation loop ────────────────────────────────────────────
 
     function wrapAnim(val, lo, hi) {
@@ -2370,6 +2645,10 @@
         tickSliderEffects(ts);
       }
 
+      if (curlSimPlaying && multiMode) {
+        tickCurlSimulation(dt, ts);
+      }
+
       draw();
       if (isAnimationActive()) {
         rafId = requestAnimationFrame(animate);
@@ -2396,6 +2675,7 @@
       canvas.height = h;
       canvas.style.width  = Math.floor(w / dpr) + 'px';
       canvas.style.height = Math.floor(h / dpr) + 'px';
+      if (multiMode && circles.length) constrainCirclePositions(w, h);
     }
 
     // ── Style config ──────────────────────────────────────────────
@@ -2849,11 +3129,13 @@
         const dy = (pos.y - canvasDrag.startY) / h;
         c.x = canvasDrag.origX + dx;
         c.y = canvasDrag.origY + dy;
+        constrainCirclePositions(w, h);
         draw();
       } else if (canvasDrag.type === 'resize') {
         const { cx, cy } = circleLayout(c, w, h);
         const dist = Math.hypot(pos.x - cx, pos.y - cy);
         c.size = clamp(dist / base, 0.08, 0.48);
+        constrainCirclePositions(w, h);
         draw();
       }
     }
@@ -4980,6 +5262,9 @@
       } else if (e.key === 'm' || e.key === 'M') {
         e.preventDefault();
         toggleMultiMode();
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        toggleCurlSim();
       }
     });
 
