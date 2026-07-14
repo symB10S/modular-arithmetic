@@ -129,6 +129,7 @@
     }
 
     #c { display: block; border-radius: 50%; cursor: default; touch-action: none; }
+    body.zoom-tool #c { cursor: crosshair; }
     body.multi-mode #c { border-radius: 8px; cursor: crosshair; }
     body.fullscreen #c,
     body.multi-mode #c { border-radius: 0; }
@@ -1345,6 +1346,14 @@
             <path d="M14 12c1 3 4 5 8 4"/>
           </svg>
         </button>
+        <button class="topbar-btn" id="zoomToolBtn" title="Zoom tool — click center, then radius (Z)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            <line x1="11" y1="8" x2="11" y2="14"/>
+            <line x1="8" y1="11" x2="14" y2="11"/>
+          </svg>
+        </button>
         <button class="topbar-btn" id="topbarFullscreenBtn" title="Fullscreen (P)">
           <svg class="fs-enter" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <polyline points="15 3 21 3 21 9"/>
@@ -1411,9 +1420,9 @@
       <input class="step points-step-input" id="pointsStep" type="number" value="5" step="any" title="Step size for arrows and animation speed (units/sec)" data-tip="Points — step size and animation speed" />
       <span class="lbl">Points</span>
       <input class="bound points-bound" id="pointsLo" type="number" value="0"   step="1" title="Lower bound of the Points slider" data-tip="Points — slider lower bound" />
-      <input id="pointsSlider" type="range" min="0" max="200" value="200" step="5" />
-      <input class="bound points-bound" id="pointsHi" type="number" value="200" step="1" title="Upper bound of the Points slider" data-tip="Points — slider upper bound" />
-      <input id="pointsNum" type="number" value="200" step="1" data-tip="Points — current value" />
+      <input id="pointsSlider" type="range" min="0" max="10000" value="200" step="5" />
+      <input class="bound points-bound" id="pointsHi" type="number" value="100000000" step="1" min="2" max="100000000" title="Upper bound of the Points slider" data-tip="Points — slider upper bound (up to 100 million)" />
+      <input id="pointsNum" type="number" value="200" step="1" min="2" max="100000000" data-tip="Points — current value (type up to 100 million)" />
     </div>
 
   </div>
@@ -1614,8 +1623,8 @@
         <div class="sp-section-title">Lines</div>
         <div class="sp-row">
           <label for="s-line-width">Thickness</label>
-          <input type="range" id="s-line-width" min="0.1" max="5" step="0.1" value="1.2" />
-          <input type="number" class="sp-val" id="s-line-width-val" value="1.2" min="0.1" max="5" step="0.1" />
+          <input type="range" id="s-line-width" min="0.001" max="5" step="0.001" value="1.2" />
+          <input type="number" class="sp-val" id="s-line-width-val" value="1.2" min="0.001" max="5" step="any" />
         </div>
         <div class="sp-row">
           <label for="s-line-opacity">Opacity</label>
@@ -1773,6 +1782,7 @@
     const topbarMultPlayBtn   = el('topbarMultPlayBtn');
     const topbarRestartBtn    = el('topbarRestartBtn');
     const topbarFullscreenBtn = el('topbarFullscreenBtn');
+    const zoomToolBtn         = el('zoomToolBtn');
     const topbarCurlSimBtn    = el('topbarCurlSimBtn');
     const multiModeBtn        = el('multiModeBtn');
     const circleTabs          = el('circleTabs');
@@ -1792,6 +1802,21 @@
 
     let curlSimPlaying = false;
     let curlSimEpoch = 0;
+
+    const POINTS_SLIDER_CAP = 10000;
+    const POINTS_MAX = 100_000_000;
+    const HIGH_POINT_THRESHOLD = 5000;
+
+    let zoomToolEnabled = false;
+    let canvasView = {
+      center: null,
+      radius: null,
+      pendingCenter: null,
+      previewRadius: null,
+    };
+
+    let circleRenderCache = null;
+    let circleRenderCacheKey = '';
     const CURL_SPATIAL = 2.8;
     const CURL_TIME = 0.14;
     const CURL_SPEED = 0.09;
@@ -1935,6 +1960,12 @@
     function setMultiMode(on) {
       if (on === multiMode) return;
       if (on) {
+        zoomToolEnabled = false;
+        canvasView.center = null;
+        canvasView.radius = null;
+        canvasView.pendingCenter = null;
+        canvasView.previewRadius = null;
+        invalidateCircleRenderCache();
         if (!circles.length) {
           circles = [circleFromGlobals()];
         } else {
@@ -1972,6 +2003,7 @@
       multHi.title = on ? 'End multiplier' : 'Upper bound of the Multiplier slider';
       multStep.title = on ? 'Multiplier increment / animation speed' : 'Step size for arrows and animation speed (units/sec)';
       renderCircleTabs();
+      syncZoomToolUI();
       sizeCanvas();
       draw();
     }
@@ -2087,6 +2119,7 @@
       multAnim = mult;
       multSlider.value = mult;
       multNum.value    = parseFloat(mult.toFixed(3));
+      invalidateCircleRenderCache();
       if (multiMode) {
         const c = getSelectedCircle();
         if (c) {
@@ -2119,14 +2152,19 @@
     function syncPoints(v, redraw = true) {
       const lo = num(pointsLo);
       const requested = isNaN(parseFloat(v)) ? lo : Math.round(parseFloat(v));
-      points = Math.max(lo, requested);
-      if (!multiMode && points > num(pointsHi)) {
-        pointsHi.value   = points;
-        pointsSlider.max = points;
+
+      if (requested > num(pointsHi)) {
+        pointsHi.value = Math.min(requested, POINTS_MAX);
       }
+
+      const hi = Math.min(POINTS_MAX, Math.max(2, num(pointsHi)));
+      points = clamp(requested, lo, hi);
       pointsAnim = points;
-      pointsSlider.value = points;
+      const sliderMax = Math.min(Math.max(hi, points), POINTS_SLIDER_CAP);
+      pointsSlider.max = sliderMax;
+      pointsSlider.value = Math.min(points, sliderMax);
       pointsNum.value    = points;
+      invalidateCircleRenderCache();
       if (!multiMode) {
         multHi.value       = points;
         multSlider.max     = points;
@@ -2159,7 +2197,13 @@
     multSlider.addEventListener('input',   () => syncMult(multSlider.value));
     multNum.addEventListener('change',     () => syncMult(multNum.value));
     pointsSlider.addEventListener('input', () => syncPoints(pointsSlider.value));
-    pointsNum.addEventListener('change',   () => syncPoints(pointsNum.value));
+    pointsNum.addEventListener('change', () => syncPoints(pointsNum.value));
+    pointsNum.addEventListener('input', () => {
+      const requested = Math.round(parseFloat(pointsNum.value));
+      if (!isNaN(requested) && requested > num(pointsHi)) {
+        pointsHi.value = Math.min(requested, POINTS_MAX);
+      }
+    });
 
     // ── bound input listeners ─────────────────────────────────────
 
@@ -2171,11 +2215,19 @@
       applyBounds(multSlider, multLo, multHi, syncMult);
       if (multiMode) pushControlsToCircle();
     });
+    function applyPointsBounds() {
+      pointsSlider.min = num(pointsLo);
+      const hi = Math.min(POINTS_MAX, Math.max(2, num(pointsHi)));
+      if (num(pointsHi) !== hi) pointsHi.value = hi;
+      pointsSlider.max = Math.min(hi, POINTS_SLIDER_CAP);
+      syncPoints(pointsNum.value);
+    }
+
     pointsLo.addEventListener('change', () => {
-      if (!multiMode) applyBounds(pointsSlider, pointsLo, pointsHi, syncPoints);
+      if (!multiMode) applyPointsBounds();
     });
     pointsHi.addEventListener('change', () => {
-      if (!multiMode) applyBounds(pointsSlider, pointsLo, pointsHi, syncPoints);
+      if (!multiMode) applyPointsBounds();
     });
 
     // ── arrow button listeners ────────────────────────────────────
@@ -2882,12 +2934,194 @@
 
     // ── draw ──────────────────────────────────────────────────────
 
-    function drawCircleAt(targetCtx, cx, cy, r, multVal, nPts, styleObj) {
+    function lineSegmentIntersectsCircle(A, B, C, r) {
+      const abX = B.x - A.x;
+      const abY = B.y - A.y;
+      const acX = C.x - A.x;
+      const acY = C.y - A.y;
+      const abLenSq = abX * abX + abY * abY;
+      let t = 0;
+      if (abLenSq > 0) {
+        t = (acX * abX + acY * abY) / abLenSq;
+      }
+      const tClamped = Math.max(0, Math.min(1, t));
+      const pX = A.x + tClamped * abX;
+      const pY = A.y + tClamped * abY;
+      const distSq = (pX - C.x) * (pX - C.x) + (pY - C.y) * (pY - C.y);
+      return distSq <= r * r;
+    }
+
+    function isCanvasViewActive() {
+      return !!(canvasView.center && canvasView.radius > 0);
+    }
+
+    function getViewCull() {
+      if (!isCanvasViewActive()) return null;
+      return { center: canvasView.center, radius: canvasView.radius };
+    }
+
+    function getViewTransform(w, h) {
+      if (!isCanvasViewActive()) return null;
+      const displayR = Math.min(w, h) / 2;
+      const scale = displayR / canvasView.radius;
+      return {
+        scale,
+        tx: w / 2 - canvasView.center.x * scale,
+        ty: h / 2 - canvasView.center.y * scale,
+      };
+    }
+
+    function applyViewTransform(targetCtx, w, h) {
+      const vt = getViewTransform(w, h);
+      if (!vt) return null;
+      targetCtx.translate(vt.tx, vt.ty);
+      targetCtx.scale(vt.scale, vt.scale);
+      return vt;
+    }
+
+    function screenToWorld(sx, sy, w, h) {
+      const vt = getViewTransform(w, h);
+      if (!vt) return { x: sx, y: sy };
+      return {
+        x: (sx - vt.tx) / vt.scale,
+        y: (sy - vt.ty) / vt.scale,
+      };
+    }
+
+    function worldToScreen(wx, wy, w, h) {
+      const vt = getViewTransform(w, h);
+      if (!vt) return { x: wx, y: wy };
+      return {
+        x: wx * vt.scale + vt.tx,
+        y: wy * vt.scale + vt.ty,
+      };
+    }
+
+    function invalidateCircleRenderCache() {
+      circleRenderCacheKey = '';
+    }
+
+    function circleRenderCacheSignature(w, h, multVal, nPts) {
+      return `${w}x${h}|${multVal}|${nPts}|${JSON.stringify(style)}`;
+    }
+
+    function shouldUseCircleRenderCache(multVal, nPts) {
+      return nPts >= HIGH_POINT_THRESHOLD
+        && !isCanvasViewActive()
+        && !multPlaying
+        && !pointsPlaying
+        && !zoomToolEnabled;
+    }
+
+    function strokeColorForChord(s, i, nPts) {
+      if (s.colorMode === 'solid') {
+        return hexToRgba(s.solidColor, s.lineOpacity);
+      }
+      if (s.colorMode === 'hue-range') {
+        const hue = s.hueStart + (i / nPts) * (s.hueEnd - s.hueStart);
+        return `hsla(${hue},${s.saturation}%,${s.lightness}%,${s.lineOpacity})`;
+      }
+      return `hsla(${(i / nPts) * 360},${s.saturation}%,${s.lightness}%,${s.lineOpacity})`;
+    }
+
+    function chordTargetPoint(cx, cy, r, index, nPts) {
+      const a = (2 * Math.PI * index) / nPts - Math.PI / 2;
+      return {
+        x: cx + r * Math.cos(a),
+        y: cy + r * Math.sin(a),
+      };
+    }
+
+    function drawChords(targetCtx, cx, cy, r, multVal, nPts, s, viewCull) {
+      const useCulling = !!viewCull;
+      const highPts = nPts >= HIGH_POINT_THRESHOLD;
+      const cosTable = new Float32Array(nPts);
+      const sinTable = new Float32Array(nPts);
+      for (let i = 0; i < nPts; i++) {
+        const a = (2 * Math.PI * i) / nPts - Math.PI / 2;
+        cosTable[i] = Math.cos(a);
+        sinTable[i] = Math.sin(a);
+      }
+
+      targetCtx.lineWidth = Math.max(0.001, s.lineWidthMax);
+
+      const cullCenter = viewCull ? viewCull.center : null;
+      const cullR = viewCull ? viewCull.radius : 0;
+      const cullRPad = cullR > 0 ? cullR + targetCtx.lineWidth * 2 : 0;
+
+      if (s.colorMode === 'solid') {
+        targetCtx.strokeStyle = strokeColorForChord(s, 0, nPts);
+        targetCtx.beginPath();
+        let hasPath = false;
+        for (let i = 0; i < nPts; i++) {
+          const j = (i * multVal) % nPts;
+          const ax = cx + r * cosTable[i];
+          const ay = cy + r * sinTable[i];
+          const { x: bx, y: by } = chordTargetPoint(cx, cy, r, j, nPts);
+          if (useCulling && !lineSegmentIntersectsCircle(
+            { x: ax, y: ay }, { x: bx, y: by }, cullCenter, cullRPad
+          )) continue;
+          targetCtx.moveTo(ax, ay);
+          targetCtx.lineTo(bx, by);
+          hasPath = true;
+        }
+        if (hasPath) targetCtx.stroke();
+        return;
+      }
+
+      const hueBuckets = highPts ? 72 : 0;
+      if (hueBuckets > 0) {
+        const paths = Array.from({ length: hueBuckets }, () => []);
+        const styles = new Array(hueBuckets);
+        for (let i = 0; i < nPts; i++) {
+          const j = (i * multVal) % nPts;
+          const ax = cx + r * cosTable[i];
+          const ay = cy + r * sinTable[i];
+          const { x: bx, y: by } = chordTargetPoint(cx, cy, r, j, nPts);
+          if (useCulling && !lineSegmentIntersectsCircle(
+            { x: ax, y: ay }, { x: bx, y: by }, cullCenter, cullRPad
+          )) continue;
+          const bucket = Math.min(hueBuckets - 1, Math.floor((i / nPts) * hueBuckets));
+          if (!styles[bucket]) styles[bucket] = strokeColorForChord(s, i, nPts);
+          paths[bucket].push(ax, ay, bx, by);
+        }
+        for (let b = 0; b < hueBuckets; b++) {
+          if (!paths[b].length) continue;
+          targetCtx.strokeStyle = styles[b];
+          targetCtx.beginPath();
+          for (let k = 0; k < paths[b].length; k += 4) {
+            targetCtx.moveTo(paths[b][k], paths[b][k + 1]);
+            targetCtx.lineTo(paths[b][k + 2], paths[b][k + 3]);
+          }
+          targetCtx.stroke();
+        }
+        return;
+      }
+
+      for (let i = 0; i < nPts; i++) {
+        const j = (i * multVal) % nPts;
+        const ax = cx + r * cosTable[i];
+        const ay = cy + r * sinTable[i];
+        const { x: bx, y: by } = chordTargetPoint(cx, cy, r, j, nPts);
+        if (useCulling && !lineSegmentIntersectsCircle(
+          { x: ax, y: ay }, { x: bx, y: by }, cullCenter, cullRPad
+        )) continue;
+        targetCtx.strokeStyle = strokeColorForChord(s, i, nPts);
+        targetCtx.beginPath();
+        targetCtx.moveTo(ax, ay);
+        targetCtx.lineTo(bx, by);
+        targetCtx.stroke();
+      }
+    }
+
+    function drawCircleAt(targetCtx, cx, cy, r, multVal, nPts, styleObj, viewCull) {
       const s = styleObj || style;
-      const dotR = nPts >= 2 ? Math.max(1.2, 4 - nPts / 80) * s.dotScale : 0;
+      const highPts = nPts >= HIGH_POINT_THRESHOLD;
+      const drawDots = s.showDots && !highPts && nPts < 2000;
+      const dotR = drawDots ? Math.max(1.2, 4 - nPts / 80) * s.dotScale : 0;
       let bgR = r;
       if (s.showRing) bgR += s.ringWidth / 2;
-      if (nPts >= 2) bgR = Math.max(bgR, r + dotR);
+      if (drawDots) bgR = Math.max(bgR, r + dotR);
 
       fillCircleBackground(targetCtx, cx, cy, bgR, s);
 
@@ -2900,7 +3134,8 @@
       }
 
       if (nPts < 2) return bgR;
-      if (s.showDots) {
+
+      if (drawDots) {
         for (let i = 0; i < nPts; i++) {
           const a = (2 * Math.PI * i) / nPts - Math.PI / 2;
           targetCtx.fillStyle = s.dotColor;
@@ -2910,36 +3145,89 @@
         }
       }
 
-      targetCtx.lineWidth = Math.max(0.3, s.lineWidthMax - nPts / 300);
-      for (let i = 0; i < nPts; i++) {
-        const j  = (i * multVal) % nPts;
-        const a1 = (2 * Math.PI * i) / nPts - Math.PI / 2;
-        const a2 = (2 * Math.PI * j) / nPts - Math.PI / 2;
-        let sc;
-        if (s.colorMode === 'solid') {
-          sc = hexToRgba(s.solidColor, s.lineOpacity);
-        } else if (s.colorMode === 'hue-range') {
-          const hue = s.hueStart + (i / nPts) * (s.hueEnd - s.hueStart);
-          sc = `hsla(${hue},${s.saturation}%,${s.lightness}%,${s.lineOpacity})`;
-        } else {
-          sc = `hsla(${(i / nPts) * 360},${s.saturation}%,${s.lightness}%,${s.lineOpacity})`;
-        }
-        targetCtx.strokeStyle = sc;
-        targetCtx.beginPath();
-        targetCtx.moveTo(cx + r * Math.cos(a1), cy + r * Math.sin(a1));
-        targetCtx.lineTo(cx + r * Math.cos(a2), cy + r * Math.sin(a2));
-        targetCtx.stroke();
-      }
+      drawChords(targetCtx, cx, cy, r, multVal, nPts, s, viewCull);
       return bgR;
     }
 
-    function drawCircle(targetCtx, targetCanvas, multVal, nPts) {
+    function drawCircleContent(targetCtx, w, h, multVal, nPts, viewCull) {
+      const base = Math.min(w, h);
+      const cx = w / 2, cy = h / 2, r = base * 0.44;
+      drawCircleAt(targetCtx, cx, cy, r, multVal, nPts, style, viewCull);
+    }
+
+    function drawCircle(targetCtx, targetCanvas, multVal, nPts, viewCull) {
       const w = targetCanvas.width, h = targetCanvas.height;
       if (!w || !h) return;
       targetCtx.clearRect(0, 0, w, h);
-      const base = Math.min(w, h);
-      const cx = w / 2, cy = h / 2, r = base * 0.44;
-      drawCircleAt(targetCtx, cx, cy, r, multVal, nPts);
+      drawCircleContent(targetCtx, w, h, multVal, nPts, viewCull);
+    }
+
+    function drawZoomOverlay(w, h) {
+      const dpr = devicePixelRatio;
+      const vt = getViewTransform(w, h);
+      const screenScale = vt ? vt.scale : 1;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(167, 139, 250, 0.9)';
+      ctx.lineWidth = 2 * dpr;
+      ctx.setLineDash([8 * dpr, 5 * dpr]);
+
+      if (canvasView.pendingCenter) {
+        const center = worldToScreen(canvasView.pendingCenter.x, canvasView.pendingCenter.y, w, h);
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, 5 * dpr, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        if (canvasView.previewRadius > 0) {
+          ctx.beginPath();
+          ctx.arc(center.x, center.y, canvasView.previewRadius * screenScale, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = 'rgba(167, 139, 250, 0.85)';
+        ctx.font = `${12 * dpr}px system-ui, sans-serif`;
+        ctx.textAlign = 'center';
+        const msg = canvasView.previewRadius > 0
+          ? 'Click to set zoom radius'
+          : 'Click center of zoom view';
+        ctx.fillText(msg, w / 2, 24 * dpr);
+      }
+
+      ctx.restore();
+    }
+
+    function drawSingleCircleWithView() {
+      const w = canvas.width, h = canvas.height;
+      const nPts = Math.round(points);
+      const viewCull = getViewCull();
+      const useCache = shouldUseCircleRenderCache(mult, nPts);
+
+      if (useCache) {
+        const sig = circleRenderCacheSignature(w, h, mult, nPts);
+        if (sig !== circleRenderCacheKey) {
+          if (!circleRenderCache) {
+            circleRenderCache = document.createElement('canvas');
+          }
+          circleRenderCache.width = w;
+          circleRenderCache.height = h;
+          const cacheCtx = circleRenderCache.getContext('2d');
+          cacheCtx.clearRect(0, 0, w, h);
+          drawCircleContent(cacheCtx, w, h, mult, nPts, null);
+          circleRenderCacheKey = sig;
+        }
+        ctx.drawImage(circleRenderCache, 0, 0);
+      } else {
+        ctx.save();
+        if (isCanvasViewActive()) {
+          applyViewTransform(ctx, w, h);
+        }
+        drawCircleContent(ctx, w, h, mult, nPts, viewCull);
+        ctx.restore();
+      }
+
+      if (zoomToolEnabled) {
+        drawZoomOverlay(w, h);
+      }
     }
 
     function drawScene(targetCtx, targetCanvas, scene) {
@@ -3030,11 +3318,12 @@
         }
         drawSelectionOverlay();
       } else {
-        drawCircle(ctx, canvas, mult, points);
+        drawSingleCircleWithView();
       }
     }
 
     window.addEventListener('resize', () => {
+      invalidateCircleRenderCache();
       sizeCanvas();
       draw();
       if (typeof analysisResultsVisible === 'function' && analysisResultsVisible()) {
@@ -3057,9 +3346,11 @@
     // init
     applyStep(multSlider,   multStep);
     applyStep(pointsSlider, pointsStep);
+    pointsSlider.max = Math.min(num(pointsHi), POINTS_SLIDER_CAP);
     syncPoints(200, false);
 
     sizeCanvas();
+    syncZoomToolUI();
     draw();
 
     // ── Multi-circle canvas interaction ───────────────────────────
@@ -3078,6 +3369,33 @@
     }
 
     function onCanvasPointerDown(e) {
+      if (zoomToolEnabled && !multiMode && !presetPreview) {
+        const w = canvas.width, h = canvas.height;
+        const pos = canvasPointerPos(e);
+        const world = screenToWorld(pos.x, pos.y, w, h);
+
+        if (!canvasView.pendingCenter) {
+          canvasView.pendingCenter = world;
+          canvasView.previewRadius = 0;
+        } else {
+          const r = Math.hypot(
+            world.x - canvasView.pendingCenter.x,
+            world.y - canvasView.pendingCenter.y
+          );
+          if (r > 0) {
+            canvasView.center = { x: canvasView.pendingCenter.x, y: canvasView.pendingCenter.y };
+            canvasView.radius = r;
+            invalidateCircleRenderCache();
+          }
+          canvasView.pendingCenter = null;
+          canvasView.previewRadius = null;
+        }
+        canvas.setPointerCapture(e.pointerId);
+        e.preventDefault();
+        draw();
+        return;
+      }
+
       if (!multiMode || presetPreview) return;
       const pos = canvasPointerPos(e);
       const bounds = selectedCircleBounds();
@@ -3117,6 +3435,18 @@
     }
 
     function onCanvasPointerMove(e) {
+      if (zoomToolEnabled && !multiMode && canvasView.pendingCenter) {
+        const w = canvas.width, h = canvas.height;
+        const pos = canvasPointerPos(e);
+        const world = screenToWorld(pos.x, pos.y, w, h);
+        canvasView.previewRadius = Math.hypot(
+          world.x - canvasView.pendingCenter.x,
+          world.y - canvasView.pendingCenter.y
+        );
+        draw();
+        return;
+      }
+
       if (!canvasDrag) return;
       const pos = canvasPointerPos(e);
       const c = circles.find(x => x.id === canvasDrag.circleId);
@@ -3141,6 +3471,10 @@
     }
 
     function onCanvasPointerUp(e) {
+      if (zoomToolEnabled && !multiMode) {
+        try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+        return;
+      }
       if (!canvasDrag) return;
       canvasDrag = null;
       try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
@@ -3150,6 +3484,40 @@
     canvas.addEventListener('pointermove', onCanvasPointerMove);
     canvas.addEventListener('pointerup', onCanvasPointerUp);
     canvas.addEventListener('pointercancel', onCanvasPointerUp);
+    canvas.addEventListener('dblclick', () => {
+      if (!isCanvasViewActive() && !canvasView.pendingCenter) return;
+      resetCanvasView();
+    });
+
+    function resetCanvasView() {
+      canvasView.center = null;
+      canvasView.radius = null;
+      canvasView.pendingCenter = null;
+      canvasView.previewRadius = null;
+      invalidateCircleRenderCache();
+      draw();
+    }
+
+    function syncZoomToolUI() {
+      zoomToolBtn.classList.toggle('active', zoomToolEnabled);
+      document.body.classList.toggle('zoom-tool', zoomToolEnabled && !multiMode);
+      zoomToolBtn.title = multiMode
+        ? 'Zoom tool (single-circle mode only)'
+        : 'Zoom tool — click center, then radius (Z). Double-click or Esc to reset.';
+    }
+
+    function toggleZoomTool() {
+      if (multiMode) return;
+      zoomToolEnabled = !zoomToolEnabled;
+      if (!zoomToolEnabled) {
+        canvasView.pendingCenter = null;
+        canvasView.previewRadius = null;
+      }
+      syncZoomToolUI();
+      draw();
+    }
+
+    zoomToolBtn.addEventListener('click', toggleZoomTool);
 
     multiModeBtn.addEventListener('click', toggleMultiMode);
     addCircleBtn.addEventListener('click', addCircle);
@@ -3251,6 +3619,7 @@
     }
 
     function styleChanged() {
+      invalidateCircleRenderCache();
       commitStyleToCircles();
       redrawAll();
     }
@@ -3345,7 +3714,7 @@
     bindCheck('s-show-dots',    'showDots');
     bindColor('s-dot-color',    'dotColor');
     bindRange('s-dot-scale',    's-dot-scale-val',    'dotScale',     '',  2);
-    bindRange('s-line-width',   's-line-width-val',   'lineWidthMax', '',  1);
+    bindRange('s-line-width',   's-line-width-val',   'lineWidthMax', '',  3);
     bindRange('s-line-opacity', 's-line-opacity-val', 'lineOpacity',  '',  2);
     bindRange('s-hue-start',    's-hue-start-val',    'hueStart',     '°', 0);
     bindRange('s-hue-end',      's-hue-end-val',      'hueEnd',       '°', 0);
@@ -3898,7 +4267,7 @@
       el('s-show-dots').checked = style.showDots;
       el('s-dot-color').value = style.dotColor;
       setRangePair('s-dot-scale', 's-dot-scale-val', style.dotScale, 2);
-      setRangePair('s-line-width', 's-line-width-val', style.lineWidthMax, 1);
+      setRangePair('s-line-width', 's-line-width-val', style.lineWidthMax, 3);
       setRangePair('s-line-opacity', 's-line-opacity-val', style.lineOpacity, 2);
       el('s-color-mode').value = style.colorMode;
       setRangePair('s-hue-start', 's-hue-start-val', style.hueStart, 0);
@@ -5265,6 +5634,12 @@
       } else if (e.key === 's' || e.key === 'S') {
         e.preventDefault();
         toggleCurlSim();
+      } else if (e.key === 'z' || e.key === 'Z') {
+        e.preventDefault();
+        toggleZoomTool();
+      } else if (e.key === 'Escape' && (isCanvasViewActive() || canvasView.pendingCenter)) {
+        e.preventDefault();
+        resetCanvasView();
       }
     });
 
